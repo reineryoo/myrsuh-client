@@ -3,6 +3,10 @@ name: Publish MyRSUH
 on:
   push:
     branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
   schedule:
     # 23:00 по Москве (UTC+3).

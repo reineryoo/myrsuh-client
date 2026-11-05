@@ -14,3 +14,6 @@ university-response.json
 .logs/
 *.tsbuildinfo
 frontend/public/data/
+/docs/
+/REQUIREMENTS.md
+/TEST-REPORT.md
