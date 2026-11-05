@@ -1,30 +1,27 @@
-import { useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { isSameMonth, parseISO } from 'date-fns'
 import { ArrowRight, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, RefreshCw, Search, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { DaySchedule } from '@/components/DaySchedule'
 import { DayStrip } from '@/components/DayStrip'
 import { GroupPicker } from '@/components/GroupPicker'
-import { LessonCard } from '@/components/LessonCard'
+import { SubjectSearchResults } from '@/components/SubjectSearchResults'
 import { MonthGrid } from '@/components/MonthGrid'
 import { WeekGrid } from '@/components/WeekGrid'
 import { dateKey, fmt, monthsBetween, moveCalendarDate, semesterWeek, swipeDate, weekDays } from '@/lib/dates'
 import type { MoscowClock } from '@/lib/dates'
-import { groupPairs, matchesSearch, pairKinds, pairWord } from '@/lib/lessons'
+import { groupPairs, kindLabels, pairKinds, pairWord } from '@/lib/lessons'
 import type { LessonKind } from '@/lib/lessons'
 import { cn } from '@/lib/utils'
 import type { Day, Group, Lesson, Schedule } from '@/types'
 
 export type CalendarView = 'day' | 'week' | 'month' | 'semester'
 const views = [{ id: 'day', label: 'День' }, { id: 'week', label: 'Неделя' }, { id: 'month', label: 'Месяц' }] as const
-const kindLabels: Record<LessonKind, string> = { lecture: 'Лекции', practice: 'Практика', combined: 'Лек. + сем.', exam: 'Экзамены', neutral: 'Другие' }
 
 export function CalendarPage({ data, days, date, view, now, group, savedGroups, onDate, onView, onGroupSelect, onManageGroups, onDetails, onRefresh, refreshing, cooldown, organizePast = true }:
   { data: Schedule; days: Map<string, Day>; date: Date; view: CalendarView; now: MoscowClock; group?: Group; savedGroups: Group[];
     onDate: (date: Date) => void; onView: (view: CalendarView) => void; onGroupSelect: (id: string) => void; onManageGroups: () => void;
     onDetails: (date: Date, lessons: Lesson[]) => void; onRefresh?: () => void; refreshing: boolean; cooldown: boolean; organizePast?: boolean }) {
   const [search, setSearch] = useState('')
-  const [searchLimit, setSearchLimit] = useState(30)
   const swipeStart = useRef<number | null>(null)
   const key = dateKey(date)
   const week = weekDays(date)
@@ -38,7 +35,6 @@ export function CalendarPage({ data, days, date, view, now, group, savedGroups, 
   const monthKinds = month.flatMap(day => pairKinds(day.lessons))
   const monthStats = (Object.keys(kindLabels) as LessonKind[]).map(kind => ({ kind, count: monthKinds.filter(value => value === kind).length })).filter(item => item.count)
   const range = `${fmt(week[0], 'd')}${isSameMonth(week[0], week[6]) ? '' : ` ${fmt(week[0], 'MMM')}`}–${fmt(week[6], 'd MMMM')}`
-  const results = useMemo(() => search.trim() ? data.days.flatMap(day => day.lessons.filter(lesson => matchesSearch(lesson, search)).map(lesson => ({ date: day.date, lesson }))) : [], [data, search])
 
   function selectDay(value: Date) { onDate(value); onView('day'); setSearch('') }
   function move(direction: number) {
@@ -56,7 +52,6 @@ export function CalendarPage({ data, days, date, view, now, group, savedGroups, 
           <input type="search" value={search} placeholder="Поиск по предметам" aria-label="Поиск по расписанию"
             onChange={event => {
               setSearch(event.target.value)
-              setSearchLimit(30)
             }} />
           {search && <button onClick={() => setSearch('')} aria-label="Очистить поиск"><X size={17} /></button>}
         </label>
@@ -69,11 +64,8 @@ export function CalendarPage({ data, days, date, view, now, group, savedGroups, 
     <div className="view-switch" aria-label="Вид расписания">{views.map(mode => <button key={mode.id} aria-pressed={!search.trim() && view === mode.id} className={cn(!search.trim() && view === mode.id && 'selected')} onClick={() => { onView(mode.id); setSearch('') }}>{mode.label}</button>)}</div>
 
     <div className="content-transition" key={search.trim() ? 'search' : `${view}:${key}`}>
-    {search.trim() ? <section className="search-results"><div className="section-heading"><h2>Результаты поиска</h2><span>{results.length}</span></div><p className="section-caption">По всему загруженному семестру</p>
-      {!results.length && <div className="state-panel"><Search size={28} /><h3>Ничего не нашлось</h3><p>Попробуй другое название предмета.</p></div>}
-      {results.slice(0, searchLimit).map(({ date: resultDate, lesson }) => <div className="search-result" key={lesson.id}><button className="result-date" onClick={() => selectDay(parseISO(resultDate))}>{fmt(parseISO(resultDate), 'd MMMM, EEEE')}<ArrowRight size={14} /></button><LessonCard lesson={lesson} day={resultDate} now={now} /></div>)}
-      {results.length > searchLimit && <Button variant="outline" className="load-more" onClick={() => setSearchLimit(searchLimit + 30)}>Показать ещё</Button>}
-    </section> : view === 'semester' ? <section className="semester-view"><div className="section-heading"><h2>Весь семестр</h2><CalendarRange size={21} /></div><p className="section-caption">{fmt(parseISO(data.period_start), 'd MMM yyyy')} — {fmt(parseISO(data.period_end), 'd MMM yyyy')}</p><div className="semester-grid">{monthsBetween(data.period_start, data.period_end).map(item => <section className="semester-month surface-panel" key={dateKey(item)}><div className="month-heading"><h3>{fmt(item, 'LLLL')}</h3><span>{fmt(item, 'yyyy')}</span></div><MonthGrid compact month={item} today={now.date} days={days} selected={key} onSelect={selectDay} start={data.period_start} end={data.period_end} /></section>)}</div></section> : <>
+    {search.trim() ? <SubjectSearchResults key={`${data.group_id}:${search}`} data={data} query={search} now={now} onDay={selectDay} organizePast={organizePast} />
+    : view === 'semester' ? <section className="semester-view"><div className="section-heading"><h2>Весь семестр</h2><CalendarRange size={21} /></div><p className="section-caption">{fmt(parseISO(data.period_start), 'd MMM yyyy')} — {fmt(parseISO(data.period_end), 'd MMM yyyy')}</p><div className="semester-grid">{monthsBetween(data.period_start, data.period_end).map(item => <section className="semester-month surface-panel" key={dateKey(item)}><div className="month-heading"><h3>{fmt(item, 'LLLL')}</h3><span>{fmt(item, 'yyyy')}</span></div><MonthGrid compact month={item} today={now.date} days={days} selected={key} onSelect={selectDay} start={data.period_start} end={data.period_end} /></section>)}</div></section> : <>
       <div className="period-navigation">
         <div className="period-arrows">
           <button aria-label={view === 'month' ? 'Предыдущий месяц' : 'Предыдущая неделя'} onClick={() => move(-1)}><ChevronLeft size={19} /></button>

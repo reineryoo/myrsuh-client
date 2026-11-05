@@ -1,6 +1,9 @@
 import type { Lesson } from '@/types'
 
 export type LessonKind = 'lecture' | 'practice' | 'combined' | 'exam' | 'neutral'
+export const kindLabels: Record<LessonKind, string> = {
+  lecture: 'Лекции', practice: 'Практика', combined: 'Лек. + сем.', exam: 'Экзамены', neutral: 'Другие',
+}
 
 export function lessonTypes(value: string | null) {
   return value?.split(/[;,]/).map(type => type.trim()).filter(Boolean) ?? []
@@ -58,8 +61,11 @@ export function breakMinutes(end: string, start: string) {
   return Math.max(0, minutes(start) - minutes(end))
 }
 
+export function normalizeSubject(value: string) {
+  return value.toLocaleLowerCase('ru').replaceAll('ё', 'е').trim().replace(/\s+/g, ' ')
+}
+
 export function matchesSearch(lesson: Lesson, query: string) {
-  const normalize = (value: string) => value.toLocaleLowerCase('ru').replaceAll('ё', 'е')
-  const text = normalize(lesson.subject)
-  return normalize(query).trim().split(/\s+/).every(term => text.includes(term))
+  const text = normalizeSubject(lesson.subject)
+  return normalizeSubject(query).split(' ').every(term => text.includes(term))
 }

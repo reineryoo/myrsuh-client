@@ -244,6 +244,25 @@ i { font-style: normal; }
 .skeleton-strip { height: 75px; border-radius: 26px; margin-bottom: 37px; }
 .skeleton-card { height: 155px; border-radius: 25px; margin-bottom: 24px; }
 .search-results { margin-top: 28px; }
+.subject-suggestions { margin-bottom: 26px; }
+.subject-options { margin-top: 12px; max-height: 280px; overflow-y: auto; border: 1px solid var(--border); border-radius: 22px; background: var(--surface); }
+.subject-options button { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 15px 17px; text-align: left; transition: background .18s ease; }
+.subject-options button + button { border-top: 1px solid var(--border); }
+.subject-options button:hover { background: var(--surface-hover); }
+.subject-options button > span { min-width: 0; }
+.subject-options strong { display: block; font-size: 14px; font-weight: 550; line-height: 1.5; overflow-wrap: anywhere; }
+.subject-options small { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); }
+.subject-options svg { flex-shrink: 0; color: var(--soft); }
+.subject-back { display: flex; align-items: center; gap: 5px; min-height: 44px; margin-bottom: 8px; font-size: 12px; color: var(--soft); }
+.subject-summary { padding: 21px; margin-bottom: 26px; animation: fade-in .2s ease; }
+.subject-summary h2 { font-size: clamp(19px, 3.5vw, 24px); font-weight: 650; line-height: 1.35; overflow-wrap: anywhere; }
+.subject-count { margin-top: 14px; font-size: 14px; line-height: 1.7; }
+.subject-count strong { font-weight: 650; }
+.subject-count > span { color: var(--soft); white-space: nowrap; }
+.subject-progress { height: 7px; overflow: hidden; border-radius: 12px; background: var(--input); margin: 15px 0 12px; }
+.subject-progress > span { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width .3s ease; }
+.subject-current { display: flex; align-items: center; gap: 7px; color: var(--soft); font-size: 12px; margin-bottom: 8px; }
+.subject-current .live-dot { background: var(--accent); }
 .search-result { margin-top: 24px; }
 .result-date { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--practice); padding: 5px 0 12px; text-transform: capitalize; }
 .load-more { width: 100%; margin-top: 20px; }
