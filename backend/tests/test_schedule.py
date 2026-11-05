@@ -185,3 +185,7 @@ async def test_university_client_uses_multipart(monkeypatch, raw):
     assert b'name="flow"\r\n\r\n140_1' in captured[1].content
     assert b'name="course"\r\n\r\n2' in captured[1].content
     assert b'name="eduform"\r\n\r\n3' in captured[1].content
+    await university.fetch_schedule("3:2:213_1")
+    assert b'name="flow"\r\n\r\n213_1' in captured[2].content
+    assert b'name="course"\r\n\r\n2' in captured[2].content
+    assert b'name="eduform"\r\n\r\n3' in captured[2].content

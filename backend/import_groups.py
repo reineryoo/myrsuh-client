@@ -1,4 +1,4 @@
-"""Refresh the local catalog from the public RSUH directory."""
+"""Обновление локального каталога групп из публичного справочника РГГУ."""
 
 import json
 import time
@@ -8,6 +8,12 @@ import httpx
 
 
 def main():
+    """Загружает группы ИИНиТБ и выбранную группу Института психологии.
+
+    Проверяет наличие известной группы и заменяет каталог через временный
+    файл только после завершения всех запросов. При ошибке загрузки прежний
+    каталог остаётся доступным приложению.
+    """
     catalog = []
     with httpx.Client(base_url="https://raspis.rggu.ru/api/", timeout=20) as client:
         response = client.post("Get_Eduforms_Courses_Lists")
@@ -22,7 +28,9 @@ def main():
                 if not isinstance(rows, list):
                     raise ValueError(f"Expected a list for {params}")
                 rows = [row for row in rows
-                        if row["data"].split("-", 1)[0].strip().casefold() == "иинитб"]
+                        if row["data"].split("-", 1)[0].strip().casefold() == "иинитб"
+                        or (params["eduform"] == "3" and params["course"] == "2"
+                            and row["id"] == "213_1")]
                 if rows:
                     catalog.append({"eduform": params["eduform"], "course": int(params["course"]),
                                     "education": form["description"], "rows": rows})

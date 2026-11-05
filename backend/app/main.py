@@ -33,6 +33,11 @@ async def groups():
 
 
 async def get_schedule(group_id: str, force: bool = False):
+    """Проверяет группу и преобразует ошибки сервиса в HTTP-ответы API.
+
+    При ограничении частоты передаёт клиенту время ожидания в Retry-After.
+    При недоступности данных возвращает общее сообщение об ошибке.
+    """
     if group_id not in GROUPS:
         raise HTTPException(404, "Группа не найдена")
     try:

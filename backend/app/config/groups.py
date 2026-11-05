@@ -7,6 +7,12 @@ UNIVERSITY = "Российский государственный гуманит
 
 
 def load_groups():
+    """Собирает справочник групп приложения из локального каталога РГГУ.
+
+    Записи одного потока объединяются с сохранением направлений и профилей.
+    Форма обучения и курс входят в ключ, чтобы одинаковые ID потоков
+    из разных списков не перезаписывали друг друга.
+    """
     groups = {}
     path = Path(__file__).with_name("group_catalog.json")
     for batch in json.loads(path.read_text(encoding="utf-8")):
@@ -20,7 +26,7 @@ def load_groups():
         for upstream_id, rows in rows_by_id.items():
             group_id = f"{eduform}:{course}:{upstream_id}"
             if group_id == "3:2:119_1":
-                group_id = "119_1"  # Existing saved selections and API links.
+                group_id = "119_1"  # Сохраняем совместимость с ранее выбранной группой и ссылками API.
             label = rows[0]["data"]
             match = re.fullmatch(r"(.*?)\s*\(Группа:\s*([^)]+)\)\s*", label)
             flow, number = match.groups() if match else (label, "")

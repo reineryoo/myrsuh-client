@@ -14,6 +14,12 @@ def clean(value: str | None) -> str | None:
 
 
 def normalize(raw: RawSchedule, group_id: str) -> Schedule:
+    """Преобразует ответ РГГУ в единый формат расписания приложения.
+
+    Проверяет границы периода, сохраняет все одновременные занятия и добавляет
+    дни без пар. Время занятий берётся из расписания звонков, а отметки
+    обновления и получения данных записываются по московскому времени.
+    """
     dates = re.findall(r"\d{2}\.\d{2}\.\d{4}", raw.interval)
     if len(dates) != 2:
         raise ValueError("Upstream returned no explicit period")

@@ -34,6 +34,11 @@ class ScheduleService:
         self.locks: dict[str, asyncio.Lock] = {}
 
     def fallback(self, group_id: str) -> Schedule:
+        """Возвращает сохранённое расписание при недоступности университета.
+
+        Копия помечается как устаревшая, если её возраст ещё допустим.
+        При отсутствии подходящей копии сообщает, что данные недоступны.
+        """
         entry = self.cache.get(group_id)
         if entry and self.clock() - entry.saved_at <= settings.max_stale_seconds:
             return entry.data.model_copy(update={
@@ -43,6 +48,13 @@ class ScheduleService:
         raise Unavailable()
 
     async def get(self, group_id: str, force: bool = False) -> Schedule:
+        """Получает расписание из кеша или обновляет его через API РГГУ.
+
+        Блокировка для каждой группы объединяет одновременные обращения.
+        Принудительное обновление обходит срок свежести кеша, но сохраняет
+        ограничение частоты запросов, включая повторные попытки после ошибки.
+        При сбое используется ранее сохранённая копия через fallback.
+        """
         async with self.locks.setdefault(group_id, asyncio.Lock()):
             now = self.clock()
             entry = self.cache.get(group_id)
