@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/Logo'
 import { AccentOptions, NicknameField, ThemeOptions } from '@/components/PreferencesFields'
 import { groupShortName } from '@/config/groups'
+import { appPath } from '@/config/deployment'
 import type { Accent } from '@/config/preferences'
 import { GroupCatalog, GroupDetails } from '@/components/GroupCatalog'
 import { cn } from '@/lib/utils'
@@ -38,7 +39,7 @@ export function Onboarding({ groups, loading, error, offline, onRetry, onSelect,
     <form className="onboarding-form" onSubmit={event => { event.preventDefault(); next() }}>
       <main className={cn('onboarding-step', `step-${step}`, `step-${direction}`)} key={step}>
         {step === 0 ? <>
-          <div className="onboarding-preview"><img src="/images/onboarding-schedule.jpg" alt="Наше расписание РГГУ: дни недели, время пар, аудитории и преподаватели" width="545" height="465" fetchPriority="high" draggable={false} /></div>
+          <div className="onboarding-preview"><img src={appPath('images/onboarding-schedule.jpg')} alt="Наше расписание РГГУ: дни недели, время пар, аудитории и преподаватели" width="545" height="465" fetchPriority="high" draggable={false} /></div>
           <div className="onboarding-intro"><h1 ref={heading} tabIndex={-1}>Все пары.<br /><span>Всё под рукой.</span></h1><p>Удобное и наглядное расписание РГГУ: пары, аудитории и преподаватели — в одном месте.</p></div>
         </> : step === 1 ? <>
           <span className="onboarding-step-icon"><CalendarDays size={27} /></span>

@@ -13,3 +13,4 @@ university-response.json
 *.log
 .logs/
 *.tsbuildinfo
+frontend/public/data/

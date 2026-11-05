@@ -13,10 +13,11 @@ import type { CalendarView } from '@/pages/CalendarPage'
 import { GroupManager } from '@/pages/GroupManager'
 import { HomePage } from '@/pages/HomePage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { ApiError, forgetOfflineSchedule, request, requestGroups, requestSchedule } from '@/services/api'
+import { ApiError, forgetOfflineSchedule, requestConfig, requestGroups, requestSchedule } from '@/services/api'
 import { dateKey, fmt, moscowNow } from '@/lib/dates'
 import { ACCENT_KEY, GROUP_KEY, NICKNAME_KEY, OFFLINE_GROUPS_KEY, ORGANIZE_PAST_KEY, parseSavedGroups, readSetting, SAVED_GROUPS_KEY, saveSetting, THEME_KEY } from '@/lib/storage'
 import { parseAccent, parseOrganizePast } from '@/config/preferences'
+import { staticDataEnabled } from '@/config/deployment'
 import { sanitizeNickname } from '@/lib/nickname'
 import { cn } from '@/lib/utils'
 import type { Lesson } from '@/types'
@@ -67,14 +68,19 @@ export default function App() {
   const savedGroups = useMemo(() => groups?.filter(item => savedIds.includes(item.id)) ?? [], [groups, savedIds])
   const config = useQuery({
     queryKey: ['config'],
-    queryFn: () => request<{ manual_refresh: boolean }>('/api/config'),
+    queryFn: requestConfig,
     staleTime: Infinity,
   })
   const manualRefreshEnabled = config.data?.manual_refresh === true
   const group = groups?.find(item => item.id === selectedGroup)
   const schedule = useQuery({
     ...scheduleQuery(selectedGroup ?? ''), enabled: !!group,
-    refetchInterval: query => online && query.state.data?.offline ? 30000 : false,
+    refetchOnWindowFocus: staticDataEnabled,
+    refetchInterval: query => {
+      if (!online) return false
+      if (query.state.data?.offline) return 30000
+      return staticDataEnabled ? 15 * 60 * 1000 : false
+    },
   })
   const refresh = useMutation({
     mutationFn: (groupId: string) => requestSchedule(groupId, true),
