@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
 import { ArrowRight, ChevronLeft, Search } from 'lucide-react'
 import { parseISO } from 'date-fns'
-import { Button } from './ui/button'
-import { LessonCard } from './LessonCard'
+import { Button } from '@/components/ui/button'
+import { LessonCard } from '@/components/LessonCard'
 import { fmt } from '@/lib/dates'
 import type { MoscowClock } from '@/lib/dates'
 import { kindLabels, matchesSearch, pairWord } from '@/lib/lessons'
-import { isPastSubjectPair, remainingSubjectKinds, subjectIndex, subjectProgress } from '@/lib/subject-search'
+import { isPastSubjectPair, remainingSubjectKinds, subjectIndex, subjectProgress } from './subjects'
 import type { Schedule } from '@/types'
 
 export function SubjectSearchResults({ data, query, now, onDay, organizePast = true }:

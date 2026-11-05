@@ -52,6 +52,21 @@ def test_empty_semester_has_all_days(raw):
     assert all(not day.lessons for day in result.days)
 
 
+def test_whitespace_fields_are_treated_as_missing(raw):
+    raw["tblData"][0]["pairs"] = [{"pair": 1, "flows": [{
+        "subject": "   ", "teacher": "\t", "teacher_fullfio": "  ",
+        "room": "\n", "lessontype": "  ", "group": " ", "subgroup": " ",
+    }]}]
+    lesson = normalize(RawSchedule.model_validate(raw), "119_1").days[0].lessons[0]
+    assert lesson.subject == "Дисциплина не указана"
+    assert lesson.teacher is None
+    assert lesson.teacher_full is None
+    assert lesson.room is None
+    assert lesson.lesson_type is None
+    assert lesson.group is None
+    assert lesson.subgroup is None
+
+
 def test_invalid_data_is_rejected(raw):
     raw["tblData"][0]["pairs"][0]["pair"] = 9
     with pytest.raises(ValidationError):

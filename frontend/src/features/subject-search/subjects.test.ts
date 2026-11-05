@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { remainingSubjectKinds, subjectIndex, subjectProgress } from './subject-search'
+import { remainingSubjectKinds, subjectIndex, subjectProgress } from './subjects'
 import type { Day, Lesson } from '@/types'
 
 const lesson: Lesson = {

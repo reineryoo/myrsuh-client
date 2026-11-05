@@ -4,7 +4,7 @@ import { ArrowRight, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, Ref
 import { DaySchedule } from '@/components/DaySchedule'
 import { DayStrip } from '@/components/DayStrip'
 import { GroupPicker } from '@/components/GroupPicker'
-import { SubjectSearchResults } from '@/components/SubjectSearchResults'
+import { SubjectSearchResults } from '@/features/subject-search/SubjectSearchResults'
 import { MonthGrid } from '@/components/MonthGrid'
 import { WeekGrid } from '@/components/WeekGrid'
 import { dateKey, fmt, monthsBetween, moveCalendarDate, semesterWeek, swipeDate, weekDays } from '@/lib/dates'

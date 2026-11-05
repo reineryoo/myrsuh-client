@@ -1,7 +1,7 @@
 import type { Day, Lesson } from '@/types'
-import type { MoscowClock } from './dates'
-import { groupPairs, kindLabels, normalizeSubject, pairKinds } from './lessons'
-import type { LessonKind } from './lessons'
+import type { MoscowClock } from '@/lib/dates'
+import { groupPairs, kindLabels, normalizeSubject, pairKinds } from '@/lib/lessons'
+import type { LessonKind } from '@/lib/lessons'
 
 export interface SubjectPair { date: string; lessons: Lesson[] }
 export interface SubjectSummary { key: string; name: string; pairs: SubjectPair[] }

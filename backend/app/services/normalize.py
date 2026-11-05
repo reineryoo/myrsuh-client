@@ -9,7 +9,8 @@ MOSCOW = ZoneInfo("Europe/Moscow")
 
 
 def clean(value: str | None) -> str | None:
-    return value.strip() if value and value.strip() not in {"-", "—"} else None
+    text = value.strip() if value else ""
+    return text if text not in {"", "-", "—"} else None
 
 
 def normalize(raw: RawSchedule, group_id: str) -> Schedule:
