@@ -8,13 +8,20 @@ import type { Day, Lesson, Schedule } from '@/types'
 const lesson: Lesson = { id:'a', pair:5, start:'15:35',end:'16:55',subject:'Тестовая дисциплина',lesson_type:'лек; сем',room:'114',teacher:null,teacher_full:null,group:null,subgroup:null,source:{} }
 const date = '2026-11-03'
 const tomorrow = '2026-11-04'
-function renderHome(time: string, todayLessons: Lesson[] = [lesson], organizePast = true, nickname = '') {
+function renderHome(time: string, todayLessons: Lesson[] = [lesson], organizePast = true, nickname = '', offline = false) {
   const days = new Map<string, Day>([[date,{date,lessons:todayLessons}],[tomorrow,{date:tomorrow,lessons:[{...lesson,id:'tomorrow'}]}]])
   const data: Schedule = { group_id:'119_1',period_start:date,period_end:tomorrow,days:[...days.values()],bells:{'5':['15:35','16:55']},academic_year:null,semester:null,university_updated_at:null,fetched_at:'2026-11-03T12:00:00+03:00',stale:false,warning:null }
-  return renderToStaticMarkup(<HomePage nickname={nickname} data={data} days={days} date={parseISO(date)} now={{date,time}} organizePast={organizePast} onDate={() => {}} onCalendar={() => {}} onDetails={() => {}} onSettings={() => {}} onSearch={() => {}} />)
+  return renderToStaticMarkup(<HomePage nickname={nickname} data={data} days={days} date={parseISO(date)} now={{date,time}} organizePast={organizePast} offline={offline} onDate={() => {}} onCalendar={() => {}} onDetails={() => {}} onSettings={() => {}} onSearch={() => {}} />)
 }
 
 describe('student home page', () => {
+  it('shows the offline badge only when the browser is offline and keeps the profile button separate', () => {
+    const offline = renderHome('14:35', [lesson], true, '', true)
+    expect(offline).toContain('aria-label="Нет подключения к интернету"')
+    expect(offline).toContain('aria-label="Профиль — настройки"')
+    expect(offline).not.toContain('class="warning-banner"')
+    expect(renderHome('14:35')).not.toContain('offline-indicator')
+  })
   it('replaces Student with a sanitized nickname and its avatar initial', () => {
     const html = renderHome('14:35', [lesson], true, '🔥Reiner')
     expect(html).toContain('class="greeting-nickname" title="Reiner">Reiner</span>')
@@ -69,6 +76,8 @@ describe('student home page', () => {
     const html = renderToStaticMarkup(<SettingsPage theme="dark" onTheme={() => {}} onReset={() => {}} onRefresh={() => {}} refreshing={false} cooldown={false} />)
     expect(html).toContain('Оформление')
     expect(html).toContain('На экран iPhone')
+    expect(html).not.toContain('При локальном запуске')
+    expect(html).not.toContain('Без подключения расписание не загрузится')
     expect(html).not.toContain('Сменить группу')
     expect(html).not.toContain('settings-group')
   })

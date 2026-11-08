@@ -275,7 +275,7 @@ export default function App() {
 
     if (tab === 'home') {
       return <HomePage
-        nickname={nickname} data={data} days={days} date={homeDate} now={now} organizePast={organizePast}
+        nickname={nickname} data={data} days={days} date={homeDate} now={now} organizePast={organizePast} offline={!online}
         onDate={setHomeDate} onCalendar={openCalendar} onDetails={showDetails}
         onSettings={() => navigate('settings')} onSearch={() => navigate('calendar')}
       />
@@ -292,13 +292,13 @@ export default function App() {
 
   return <div className={cn('app-shell', `tab-${tab}`)}>
     <main>
-      {data && (offlineSchedule || data.stale) && <div className="warning-banner" role="status">
-        <CircleAlert size={17} /><span>{offlineSchedule ? 'Без связи с сервером. Показано сохранённое расписание.' : data.warning}</span>
+      {data && online && data.stale && <div className="warning-banner" role="status">
+        <CircleAlert size={17} /><span>{data.warning}</span>
       </div>}
       <div className="page-transition" key={`${tab}:${managerOpen ? 'groups' : data ? 'ready' : 'status'}:${selectedGroup}`}>
         {renderPage()}
       </div>
-      <footer className="workspace-footer">MyRSUH — неофициальное приложение расписания РГГУ.</footer>
+      <footer className="workspace-footer">MyRSUH — от студента РГГУ для студентов.</footer>
     </main>
 
     <BottomNav active={tab} onSelect={target => {

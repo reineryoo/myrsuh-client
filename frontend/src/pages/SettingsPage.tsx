@@ -40,7 +40,7 @@ export function SettingsPage({ theme, onTheme, data, onReset, onRefresh, refresh
         {cooldown && <p className="settings-help">Повторное обновление доступно через минуту.</p>}
       </>}
     </section>
-    <section className="surface-panel settings-card install-card"><h2><Smartphone size={18} />На экран iPhone</h2><p>Открывай расписание с домашнего экрана, как отдельное приложение.</p><ol><li>Открой сайт в Safari.</li><li>Нажми «Поделиться» → «На экран “Домой”».</li><li>Включи «Открывать как веб-приложение», если есть этот переключатель, и нажми «Добавить».</li></ol><p className="settings-help">При локальном запуске компьютер должен быть включён, а телефон — в той же сети. Без подключения расписание не загрузится.</p><a href="https://support.apple.com/guide/iphone/iphea86e5236/ios" target="_blank" rel="noreferrer">Инструкция Apple <ExternalLink size={12} /></a></section>
+    <section className="surface-panel settings-card install-card"><h2><Smartphone size={18} />На экран iPhone</h2><p>Открывай расписание с домашнего экрана, как отдельное приложение.</p><ol><li>Открой сайт в Safari.</li><li>Нажми «Поделиться» → «На экран “Домой”».</li><li>Включи «Открывать как веб-приложение», если есть этот переключатель, и нажми «Добавить».</li></ol><a href="https://support.apple.com/guide/iphone/iphea86e5236/ios" target="_blank" rel="noreferrer">Инструкция Apple <ExternalLink size={12} /></a></section>
     <section className="settings-reset"><p>Сброс удалит имя, сохранённые группы и оформление только в этом браузере.</p><Button variant="ghost" className="reset-data-button" onClick={onReset}><RotateCcw size={15} />Сбросить локальные данные</Button></section>
   </section>
 }

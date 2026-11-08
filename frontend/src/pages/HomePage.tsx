@@ -1,6 +1,7 @@
 import { addDays, parseISO } from 'date-fns'
 import { ArrowRight, CalendarDays, ChevronRight, Clock3, MapPin, Search } from 'lucide-react'
 import { DayStrip } from '@/components/DayStrip'
+import { OfflineIndicator } from '@/components/OfflineIndicator'
 import { dateKey, fmt, lessonProgress, timeUntil } from '@/lib/dates'
 import type { MoscowClock } from '@/lib/dates'
 import { dayState, greeting } from '@/lib/day-state'
@@ -9,9 +10,9 @@ import { groupPairs, lessonBadges, lessonKind, pairWord } from '@/lib/lessons'
 import { cn } from '@/lib/utils'
 import type { Day, Lesson, Schedule } from '@/types'
 
-export function HomePage({ data, days, date, now, onDate, onCalendar, onDetails, onSettings, onSearch, organizePast = true, nickname = '' }:
+export function HomePage({ data, days, date, now, onDate, onCalendar, onDetails, onSettings, onSearch, organizePast = true, nickname = '', offline = false }:
   { data?: Schedule; days: Map<string, Day>; date: Date; now: MoscowClock; onDate: (date: Date) => void;
-    onCalendar: (date: Date) => void; onDetails: (date: Date, lessons: Lesson[]) => void; onSettings: () => void; onSearch: () => void; organizePast?: boolean; nickname?: string }) {
+    onCalendar: (date: Date) => void; onDetails: (date: Date, lessons: Lesson[]) => void; onSettings: () => void; onSearch: () => void; organizePast?: boolean; nickname?: string; offline?: boolean }) {
   const name = displayNickname(nickname)
   const key = dateKey(date)
   const lessons = days.get(key)?.lessons ?? []
@@ -44,7 +45,7 @@ export function HomePage({ data, days, date, now, onDate, onCalendar, onDetails,
     </button> : null
 
   return <section className="home-page">
-    <header className="home-topbar"><button className="student-avatar" onClick={onSettings} aria-label="Профиль — настройки" title={name}>{nicknameInitial(nickname)}</button><span className="home-clock"><Clock3 size={12} />{now.time}<span>МСК</span></span><button className="home-search-button" onClick={onSearch} aria-label="Поиск в календаре"><Search size={20} /></button></header>
+    <header className="home-topbar"><div className="profile-control"><button className="student-avatar" onClick={onSettings} aria-label="Профиль — настройки" title={name}>{nicknameInitial(nickname)}</button>{offline && <OfflineIndicator />}</div><span className="home-clock"><Clock3 size={12} />{now.time}<span>МСК</span></span><button className="home-search-button" onClick={onSearch} aria-label="Поиск в календаре"><Search size={20} /></button></header>
     <h1 className="greeting">{greeting(now.time)},<span className="greeting-nickname" title={name}>{name}</span></h1>
     <p className="home-subtitle">{label}{data ? available ? ` · ${state.pairs.length} ${pairWord(state.pairs.length)}${lessons.length ? ` · ${state.state === 'finished' ? 'на сегодня всё' : `первая в ${lessons[0].start}`}` : ''}` : ' · нет данных на эту дату' : ' · загружаем расписание'}</p>
     <DayStrip date={date} today={now.date} days={days} onSelect={onDate} />
