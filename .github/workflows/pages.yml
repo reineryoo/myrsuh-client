@@ -8,6 +8,11 @@ on:
       - 'frontend/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
+    inputs:
+      force_publish:
+        description: 'Publish even when schedules have not changed'
+        type: boolean
+        default: false
   schedule:
     # 23:00 по Москве (UTC+3).
     - cron: '0 20 * * *'
@@ -20,12 +25,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  check:
+    name: Check schedules
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
       pages: read
+    outputs:
+      changed: ${{ steps.export.outputs.changed }}
+      base_path: ${{ steps.pages.outputs.base_path }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/configure-pages@v5
@@ -37,12 +46,53 @@ jobs:
           cache-dependency-path: backend/requirements.lock.txt
       - run: python -m pip install -r backend/requirements.lock.txt
       - name: Test backend
+        if: github.event_name == 'push' || inputs.force_publish
         run: python -m pytest -q
         working-directory: backend
-      - name: Export university schedules
-        run: python backend/export_static.py --previous-url "$PREVIOUS_URL"
+      - name: Restore last verified schedules
+        uses: actions/cache/restore@v5
+        with:
+          path: frontend/public/data
+          key: verified-schedules-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: verified-schedules-v1-
+      - name: Export and compare university schedules
+        id: export
+        run: |
+          args=()
+          if [[ "$EVENT_NAME" != "push" && "$FORCE_PUBLISH" != "true" ]]; then
+            args+=(--check-changes)
+          fi
+          python backend/export_static.py --previous-url "$PREVIOUS_URL" --github-output "$GITHUB_OUTPUT" "${args[@]}"
         env:
           PREVIOUS_URL: ${{ steps.pages.outputs.base_url }}
+          EVENT_NAME: ${{ github.event_name }}
+          FORCE_PUBLISH: ${{ inputs.force_publish }}
+      - name: Save last verified schedules
+        uses: actions/cache/save@v5
+        with:
+          path: frontend/public/data
+          key: verified-schedules-v1-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Pass changed data to build
+        if: steps.export.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: schedule-data
+          path: frontend/public/data
+          if-no-files-found: error
+          retention-days: 1
+
+  build:
+    name: Build site
+    needs: check
+    if: needs.check.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v4
+        with:
+          name: schedule-data
+          path: frontend/public/data
       - uses: pnpm/action-setup@v4
         with:
           version: 10
@@ -57,13 +107,14 @@ jobs:
       - name: Build static site
         run: pnpm --dir frontend run build
         env:
-          VITE_BASE_PATH: ${{ steps.pages.outputs.base_path }}/
+          VITE_BASE_PATH: ${{ needs.check.outputs.base_path }}/
           VITE_DATA_SOURCE: static
       - uses: actions/upload-pages-artifact@v4
         with:
           path: frontend/dist
 
   deploy:
+    name: Publish site
     needs: build
     runs-on: ubuntu-latest
     permissions:
