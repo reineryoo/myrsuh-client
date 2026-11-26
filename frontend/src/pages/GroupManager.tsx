@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, Check, ChevronRight, LoaderCircle, Pencil, Plus, Search, Trash2, UserRound, X } from 'lucide-react'
+import { ArrowLeft, Check, ChevronRight, Pencil, Plus, Search, Trash2, UserRound, X } from 'lucide-react'
 import { GroupCatalog, GroupDetails } from '@/components/GroupCatalog'
 import { Button } from '@/components/ui/button'
 import { groupShortName } from '@/config/groups'
@@ -129,17 +129,13 @@ export function GroupManager({ groups, savedIds, selected, savedTeachers, active
 function TeacherSearch({ query, onQuery, offline, savedTeachers, onAdd }:
   { query: string; onQuery: (query: string) => void; offline?: boolean; savedTeachers: Teacher[]; onAdd: (teacher: Teacher) => void }) {
   const normalized = normalizeSubject(query)
+  const searching = !!normalized && !offline
   const catalog = useQuery({
-    queryKey: ['teachers'], queryFn: requestTeachers, enabled: !!normalized && !offline,
+    queryKey: ['teachers'], queryFn: requestTeachers, enabled: searching,
     staleTime: 15 * 60 * 1000,
   })
-  if (offline) return <div className="group-search-empty surface-panel" role="status">
-    <span><LoaderCircle size={22} className="spin" aria-hidden="true" /></span>
-    <strong>Ждём подключения</strong>
-    <p>Поиск преподавателей доступен с интернетом.</p>
-  </div>
 
-  const matches = normalized ? (catalog.data ?? []).filter(teacher => normalizeSubject(teacher.name).includes(normalized)) : []
+  const matches = searching ? (catalog.data ?? []).filter(teacher => normalizeSubject(teacher.name).includes(normalized)) : []
   return <>
     <div className="search-field">
       <Search size={19} aria-hidden="true" />
@@ -160,7 +156,7 @@ function TeacherSearch({ query, onQuery, offline, savedTeachers, onAdd }:
           </button>
         </article>
       })}
-    </div> : normalized && !catalog.data && (catalog.isPending || catalog.isError) ? <div className="group-search-empty surface-panel" role="status">
+    </div> : searching && !catalog.data && (catalog.isPending || catalog.isError) ? <div className="group-search-empty surface-panel" role="status">
       <strong>{catalog.isError ? 'Не удалось загрузить список преподавателей' : 'Загружаем преподавателей…'}</strong>
       {catalog.isError && <Button variant="outline" onClick={() => void catalog.refetch()}>Повторить</Button>}
     </div> : <div className="group-search-empty surface-panel" role="status">
