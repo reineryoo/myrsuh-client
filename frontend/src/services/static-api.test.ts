@@ -22,9 +22,12 @@ it('loads configuration, catalog and a schedule under the project path', async (
   await api.requestConfig()
   await api.requestGroups()
   await api.requestSchedule('3:2:213_1')
+  await api.requestTeachers()
+  await api.requestTeacherSchedule('197')
   expect(vi.mocked(fetch).mock.calls.map(([url]) => url)).toEqual([
     '/myrsuh-client/data/config.json', '/myrsuh-client/data/groups.json',
     '/myrsuh-client/data/schedules/3_3A2_3A213_1.json',
+    '/myrsuh-client/data/teachers.json', '/myrsuh-client/data/teacher-schedules/197.json',
   ])
   expect(vi.mocked(fetch).mock.calls.every(([, options]) => options?.method === 'GET')).toBe(true)
 })

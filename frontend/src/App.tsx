@@ -17,7 +17,6 @@ import { dateKey, moscowNow } from '@/lib/dates'
 import { ACCENT_KEY, GROUP_KEY, NICKNAME_KEY, OFFLINE_GROUPS_KEY, ORGANIZE_PAST_KEY, parseSavedGroups, READ_UPDATES_KEY, readSetting, readTeacherPreferences, SAVED_GROUPS_KEY, saveSetting, TEACHER_SCHEDULE_KEY, THEME_KEY, type TeacherPreferences } from '@/lib/storage'
 import { parseAccent, parseOrganizePast } from '@/config/preferences'
 import { staticDataEnabled } from '@/config/deployment'
-import { teacherSchedulesEnabled } from '@/config/teachers'
 import { sanitizeNickname } from '@/lib/nickname'
 import { cn } from '@/lib/utils'
 import type { Lesson, ScheduleData, Teacher } from '@/types'
@@ -47,8 +46,7 @@ export default function App() {
     const selected = readSetting(GROUP_KEY)
     return [...new Set([...parseSavedGroups(readSetting(SAVED_GROUPS_KEY)), ...(selected ? [selected] : [])])]
   })
-  const [teacherPreferences, setTeacherPreferences] = useState<TeacherPreferences>(() =>
-    teacherSchedulesEnabled ? readTeacherPreferences() : { saved: [], selectedId: null })
+  const [teacherPreferences, setTeacherPreferences] = useState<TeacherPreferences>(readTeacherPreferences)
   const savedTeachers = teacherPreferences.saved
   const activeTeacher = savedTeachers.find(teacher => teacher.id === teacherPreferences.selectedId)
     ?? (selectedGroup ? undefined : savedTeachers[0])
@@ -355,7 +353,7 @@ export default function App() {
   return <div className={cn('app-shell', `tab-${tab}`)}>
     <main>
       {data && online && data.stale && <div className="warning-banner" role="status">
-        Офлайн · показаны сохранённые данные
+        Не удалось обновить расписание · показаны сохранённые данные
       </div>}
       <div className="page-transition" key={`${tab}:${managerOpen ? 'groups' : data ? 'ready' : 'status'}:${activeTeacherId ? `teacher:${activeTeacherId}` : selectedGroup}`}>
         {renderPage()}

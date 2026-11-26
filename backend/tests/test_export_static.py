@@ -7,7 +7,7 @@ import pytest
 
 import export_static
 from app.config.groups import GROUPS
-from app.models import Day, Group, Lesson, RawFlow, Schedule
+from app.models import Day, Group, Lesson, RawFlow, Schedule, TeacherSchedule
 from app.services.normalize import MOSCOW
 
 
@@ -129,6 +129,35 @@ async def check_changes(tmp_path, schedule):
         tmp_path, "https://example.test/myrsuh-client/", check_changes=True,
         groups={schedule.group_id: GROUPS[schedule.group_id]}, fetcher=AsyncMock(return_value=schedule),
     )
+
+
+@pytest.mark.asyncio
+async def test_teacher_export_compares_group_and_course_in_lesson_details(tmp_path, published_site):
+    group = sample()
+    teacher = TeacherSchedule(
+        teacher_id="197", teacher_name="Тестовый преподаватель",
+        **sample_with_lessons().model_dump(exclude={"group_id"}),
+    )
+    teacher.days[0].lessons[0].source = RawFlow(flow="1-Б-О ПИ-ИКТЦТ", course="2")
+    files = published_site(group)
+    files["teachers.json"] = [{"id": teacher.teacher_id, "name": teacher.teacher_name}]
+    files["teacher-schedules/197.json"] = teacher.model_dump(mode="json")
+    options = {
+        "groups": {group.group_id: GROUPS[group.group_id]},
+        "fetcher": AsyncMock(return_value=group),
+        "teacher_ids": {teacher.teacher_id},
+        "teacher_fetcher": AsyncMock(return_value=teacher),
+        "check_changes": True,
+    }
+    site = "https://example.test/myrsuh-client/"
+
+    assert await export_static.export_schedules(tmp_path, site, **options) is False
+    assert json.loads((tmp_path / "teachers.json").read_text(encoding="utf-8")) == files["teachers.json"]
+    saved = TeacherSchedule.model_validate_json((tmp_path / "teacher-schedules/197.json").read_text(encoding="utf-8"))
+    assert saved == teacher
+
+    teacher.days[0].lessons[0].source.course = "3"
+    assert await export_static.export_schedules(tmp_path, site, **options) is True
 
 
 @pytest.mark.asyncio

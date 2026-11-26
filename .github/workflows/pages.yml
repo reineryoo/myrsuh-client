@@ -27,7 +27,8 @@ concurrency:
 jobs:
   check:
     name: Check schedules
-    runs-on: ubuntu-latest
+    # Native Windows TLS can complete the certificate chain served by RGGU.
+    runs-on: windows-latest
     timeout-minutes: 20
     permissions:
       contents: read
@@ -58,11 +59,11 @@ jobs:
       - name: Export and compare university schedules
         id: export
         run: |
-          args=()
-          if [[ "$EVENT_NAME" != "push" && "$FORCE_PUBLISH" != "true" ]]; then
-            args+=(--check-changes)
-          fi
-          python backend/export_static.py --previous-url "$PREVIOUS_URL" --github-output "$GITHUB_OUTPUT" "${args[@]}"
+          $exportArgs = @("--previous-url", $env:PREVIOUS_URL, "--github-output", $env:GITHUB_OUTPUT)
+          if ($env:EVENT_NAME -ne "push" -and $env:FORCE_PUBLISH -ne "true") {
+            $exportArgs += "--check-changes"
+          }
+          python backend/export_static.py @exportArgs
         env:
           PREVIOUS_URL: ${{ steps.pages.outputs.base_url }}
           EVENT_NAME: ${{ github.event_name }}

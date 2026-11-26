@@ -4,7 +4,6 @@ import { ArrowLeft, Check, ChevronRight, LoaderCircle, Pencil, Plus, Search, Tra
 import { GroupCatalog, GroupDetails } from '@/components/GroupCatalog'
 import { Button } from '@/components/ui/button'
 import { groupShortName } from '@/config/groups'
-import { teacherSchedulesEnabled } from '@/config/teachers'
 import { dayState } from '@/lib/day-state'
 import { timeUntil, type MoscowClock } from '@/lib/dates'
 import { normalizeSubject, pairWord } from '@/lib/lessons'
@@ -90,10 +89,10 @@ export function GroupManager({ groups, savedIds, selected, savedTeachers, active
       </>}
     </header>
     {adding ? <div className="content-transition">
-      {teacherSchedulesEnabled && <div className="view-switch schedule-search-switch" aria-label="Тип расписания">
+      <div className="view-switch schedule-search-switch" aria-label="Тип расписания">
         <button aria-pressed={mode === 'group'} className={mode === 'group' ? 'selected' : undefined} onClick={() => switchMode('group')}>Группа</button>
         <button aria-pressed={mode === 'teacher'} className={mode === 'teacher' ? 'selected' : undefined} onClick={() => switchMode('teacher')}>Преподаватель</button>
-      </div>}
+      </div>
       {mode === 'teacher' ? <TeacherSearch query={query} onQuery={setQuery} offline={teacherSearchOffline} savedTeachers={savedTeachers}
         onAdd={teacher => { onTeacherAdd(teacher); setAdding(false) }} /> :
       <GroupCatalog autoFocus offline={searchOffline} groups={groups} query={query} onQuery={setQuery} renderGroup={group => {

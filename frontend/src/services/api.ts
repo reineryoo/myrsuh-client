@@ -50,13 +50,14 @@ export async function requestSchedule(groupId: string, refresh = false): Promise
 }
 
 export function requestTeachers() {
-  return request<Teacher[]>('/api/teachers')
+  return request<Teacher[]>(staticDataEnabled ? appPath('data/teachers.json') : '/api/teachers')
 }
 
 export async function requestTeacherSchedule(teacherId: string): Promise<TeacherSchedule> {
   let data: TeacherSchedule
   try {
-    data = await request<TeacherSchedule>(teacherSchedulePath(teacherId))
+    const url = staticDataEnabled ? appPath(`data/teacher-schedules/${scheduleFilename(teacherId)}`) : teacherSchedulePath(teacherId)
+    data = await request<TeacherSchedule>(url)
   } catch (error) {
     if (!canUseOfflineCopy(error)) throw error
     const saved = await readOfflineTeacherSchedule(teacherId)
