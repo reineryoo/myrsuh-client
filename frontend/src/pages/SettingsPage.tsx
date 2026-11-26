@@ -18,7 +18,7 @@ export function SettingsPage({ theme, onTheme, data, onReset, onRefresh, refresh
     <section className="surface-panel settings-card"><h2>Акцентный цвет</h2><AccentOptions value={accent} onChange={onAccent} /><p className="settings-help">Мягкие оттенки для кнопок и выделений. Цвета типов занятий сохраняются.</p></section>
     <section className="surface-panel settings-card"><div className="setting-switch-row"><div><h2 id="organize-past-label">Прошедшие пары вниз</h2><p id="organize-past-description">Активные пары сверху, прошедшие — серыми ниже.</p></div><button className="setting-switch" role="switch" aria-checked={organizePast} aria-labelledby="organize-past-label" aria-describedby="organize-past-description" onClick={() => onOrganizePast?.(!organizePast)}><span /></button></div><p className="settings-help">Если выключить, пары остаются в хронологическом порядке и сохраняют свои цвета. Ни одна пара не скрывается.</p></section>
     <section className="surface-panel settings-card bell-settings">
-      <h2><Timer size={16} aria-hidden="true" />Расписание звонков <small>МСК</small></h2>
+      <h2><Timer size={16} aria-hidden="true" />Время пар <small>МСК</small></h2>
       {data ? <ol className="bell-list">
         {Object.entries(data.bells).map(([pair, [start, end]]) => (
           <li key={pair}>

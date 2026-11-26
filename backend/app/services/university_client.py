@@ -1,3 +1,7 @@
+import os
+import ssl
+import sys
+
 import httpx
 
 from app.config.groups import GROUPS
@@ -20,7 +24,14 @@ async def fetch_schedule(group_id: str):
         "eduform": group["eduform"], "course": str(group["course"]),
         "intervalMode": "4", "menuMode": "flow", "flow": group["upstream_id"],
     }
-    async with httpx.AsyncClient(timeout=settings.upstream_timeout, follow_redirects=False) as client:
+    verify: ssl.SSLContext | bool = True
+    if sys.platform == "win32" and not (os.getenv("SSL_CERT_FILE") or os.getenv("SSL_CERT_DIR")):
+        import truststore
+
+        # Системная проверка Windows достраивает цепочку, если сервер не прислал промежуточный сертификат.
+        verify = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+
+    async with httpx.AsyncClient(timeout=settings.upstream_timeout, follow_redirects=False, verify=verify) as client:
         # API РГГУ ожидает поля формы в формате multipart/form-data.
         response = await client.post(
             UNIVERSITY_URL, files={key: (None, value) for key, value in payload.items()}

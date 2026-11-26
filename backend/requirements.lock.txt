@@ -23,6 +23,7 @@ pytest-asyncio==1.4.1.post1
 python-dotenv==1.2.4
 PyYAML==6.0.3
 starlette==1.10.0
+truststore==0.10.4; sys_platform == "win32"
 typing-inspection==0.4.4
 typing_extensions==4.16.0
 tzdata==2026.6

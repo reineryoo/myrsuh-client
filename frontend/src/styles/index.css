@@ -100,8 +100,6 @@ i { font-style: normal; }
 .period-arrows > span { font-size: 12px; font-weight: 500; color: var(--soft); padding: 0 3px; white-space: nowrap; }
 .period-arrows button { display: flex; align-items: center; justify-content: center; width: 29px; height: 36px; border-radius: 50%; color: var(--muted); }
 .period-arrows button:hover { background: var(--surface-hover); color: var(--text); }
-.today-button { color: var(--accent); font-size: 12px; padding: 8px 2px 8px 8px; font-weight: 550; }
-:root:not(.dark) .today-button { color: var(--practice); }
 .day-strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; margin-bottom: 25px; }
 .day-strip > button { min-width: 0; min-height: 75px; padding: 12px 2px 9px; border-radius: 28px; display: flex; align-items: center; flex-direction: column; gap: 8px; background: var(--inset); }
 .day-strip > button > span:first-child { color: var(--soft); font-size: 9px; font-weight: 600; text-transform: uppercase; }
@@ -234,8 +232,11 @@ i { font-style: normal; }
 .state-panel h2, .state-panel h3 { color: var(--text); font-size: 19px; font-weight: 600; letter-spacing: -.5px; }
 .state-panel p { font-size: 12px; line-height: 1.8; max-width: 300px; color: var(--muted); }
 .free-day { min-height: 240px; border: 1px solid var(--border); border-radius: 25px; margin-top: 24px; background: var(--surface); }
-.warning-banner, .period-warning { display: flex; align-items: flex-start; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 15px; color: var(--soft); font-size: 11px; line-height: 1.7; margin-top: 18px; }
-.warning-banner > svg { color: #dfa76a; margin-top: 2px; }
+.warning-banner { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 11px 14px; margin-bottom: 14px; border-radius: 18px; background: #fff0df; color: var(--text); font-size: 13px; line-height: 1.5; font-weight: 550; }
+.warning-banner::before { content: ''; width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: #ac551b; }
+.dark .warning-banner { background: #392d23; }
+.dark .warning-banner::before { background: #ffb46e; }
+.period-warning { display: flex; align-items: flex-start; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 15px; color: var(--soft); font-size: 11px; line-height: 1.7; margin-top: 18px; }
 .period-warning { flex-wrap: wrap; margin-bottom: 17px; }
 .period-warning p { flex: 1; min-width: 200px; }
 .period-warning button { display: inline-flex; align-items: center; gap: 6px; color: var(--practice); }
@@ -359,7 +360,7 @@ select { width: 100%; min-width: 0; color: var(--text); background: var(--input)
   .view-switch { min-height: 55px; }
   .view-switch button { font-size: 16px; }
   .period-navigation { margin-top: 23px; margin-bottom: 22px; }
-  .period-arrows > span, .today-button { font-size: 14px; }
+  .period-arrows > span { font-size: 14px; }
   .period-arrows { gap: 8px; }
   .day-strip { gap: 10px; margin-bottom: 30px; }
   .day-strip > button { min-height: 89px; gap: 10px; padding-top: 15px; }
@@ -460,7 +461,7 @@ select { width: 100%; min-width: 0; color: var(--text); background: var(--input)
   .lesson-card { grid-template-columns: 48px minmax(0, 1fr); gap: 10px; padding-left: 13px; padding-right: 13px; }
   .lesson-content h3 { font-size: 15px; }
   .lesson-time strong { font-size: 16px; }
-  .period-arrows > span, .today-button { font-size: 10px; }
+  .period-arrows > span { font-size: 10px; }
   .period-arrows button { width: 24px; }
   .month-panel { padding: 17px 9px; }
   .month-heading h2 { font-size: 22px; }
@@ -515,7 +516,7 @@ select { width: 100%; min-width: 0; color: var(--text); background: var(--input)
 .past-lesson .type-badge { background: var(--input); color: var(--muted); }
 .past-lesson .lesson-room, .past-lesson .lesson-teacher { color: var(--muted); }
 .lesson-status.live { color: var(--lesson-color); background: color-mix(in srgb, var(--lesson-color) 12%, transparent); }
-.calendar-today-fab { display: flex; align-items: center; justify-content: center; gap: 7px; position: fixed; bottom: calc(98px + env(safe-area-inset-bottom, 0px)); right: max(20px, calc((100vw - 660px) / 2)); background: var(--surface-hover); border: 1px solid var(--border); border-radius: 22px; padding: 11px 15px; color: var(--practice); font-size: 11px; font-weight: 600; z-index: 15; box-shadow: 0 4px 18px #0002; }
+.calendar-today-fab { display: flex; align-items: center; justify-content: center; gap: 7px; position: fixed; bottom: calc(98px + env(safe-area-inset-bottom, 0px)); right: max(20px, calc((100vw - 660px) / 2)); background: var(--active-surface); border: 1px solid var(--border); border-radius: 22px; padding: 11px 15px; color: var(--accent-text); font-size: 11px; font-weight: 600; z-index: 15; box-shadow: 0 4px 18px #0002; }
 .month-summary { padding: 20px 17px; margin-top: 15px; }
 .month-summary h3 { text-transform: uppercase; letter-spacing: 1px; color: var(--soft); font-size: 10px; font-weight: 650; margin-bottom: 15px; }
 .month-distribution { display: flex; gap: 4px; height: 8px; margin-bottom: 14px; }

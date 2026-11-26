@@ -293,12 +293,12 @@ export default function App() {
   return <div className={cn('app-shell', `tab-${tab}`)}>
     <main>
       {data && online && data.stale && <div className="warning-banner" role="status">
-        <CircleAlert size={17} /><span>{data.warning}</span>
+        Офлайн · показаны сохранённые данные
       </div>}
       <div className="page-transition" key={`${tab}:${managerOpen ? 'groups' : data ? 'ready' : 'status'}:${selectedGroup}`}>
         {renderPage()}
       </div>
-      <footer className="workspace-footer">MyRSUH — от студента РГГУ для студентов.</footer>
+      <footer className="workspace-footer">Разработчики не несут ответственности за возможные неточности в данных, так как информация загружается автоматически с открытых ресурсов РГГУ. Всегда сверяйте критически важную информацию с официальным сайтом.</footer>
     </main>
 
     <BottomNav active={tab} onSelect={target => {
