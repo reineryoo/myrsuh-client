@@ -4,8 +4,8 @@ import { lessonProgress, moscowNow, timeUntil } from '@/lib/dates'
 import { lessonBadges, lessonKind } from '@/lib/lessons'
 import { cn } from '@/lib/utils'
 
-export function LessonCard({ lesson, day, now, nextPair, mutePast = false }:
-  { lesson: Lesson; day: string; now: ReturnType<typeof moscowNow>; nextPair?: number; mutePast?: boolean }) {
+export function LessonCard({ lesson, day, now, nextPair, mutePast = false, onOpen }:
+  { lesson: Lesson; day: string; now: ReturnType<typeof moscowNow>; nextPair?: number; mutePast?: boolean; onOpen?: () => void }) {
   const badges = lessonBadges(lesson.lesson_type)
   const progress = lessonProgress(lesson, day, now)
   const past = day < now.date || day === now.date && lesson.end <= now.time
@@ -28,5 +28,6 @@ export function LessonCard({ lesson, day, now, nextPair, mutePast = false }:
       </span>}
     </div>
     {progress !== null && <div className="lesson-progress" role="progressbar" aria-label="Прогресс текущей пары" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.floor(progress * 100)} aria-valuetext={`До конца ${timeUntil(lesson.end, now.time)}`}><span style={{ width: `${progress * 100}%` }} /></div>}
+    {onOpen && <button className="lesson-card-open" type="button" aria-label={`Подробнее: ${lesson.subject}, ${lesson.start}`} onClick={onOpen} />}
   </article>
 }

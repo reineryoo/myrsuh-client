@@ -16,6 +16,11 @@ class Group(BaseModel):
     label: str
 
 
+class Teacher(BaseModel):
+    id: str
+    name: str
+
+
 class RawFlow(BaseModel):
     model_config = ConfigDict(extra="allow", coerce_numbers_to_str=True)
     group: str | None = None
@@ -50,6 +55,11 @@ class RawSchedule(BaseModel):
     updatetime: str | None = None
 
 
+class RawTeacherSchedule(RawSchedule):
+    model_config = ConfigDict(coerce_numbers_to_str=True)
+    id: str
+
+
 class Lesson(BaseModel):
     id: str
     pair: int
@@ -70,8 +80,7 @@ class Day(BaseModel):
     lessons: list[Lesson]
 
 
-class Schedule(BaseModel):
-    group_id: str
+class ScheduleData(BaseModel):
     period_start: date
     period_end: date
     days: list[Day]
@@ -83,3 +92,12 @@ class Schedule(BaseModel):
     stale: bool = False
     warning: str | None = None
     timezone: str = "Europe/Moscow"
+
+
+class Schedule(ScheduleData):
+    group_id: str
+
+
+class TeacherSchedule(ScheduleData):
+    teacher_id: str
+    teacher_name: str

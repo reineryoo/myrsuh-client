@@ -3,6 +3,7 @@ export interface Group {
   course: number; group: string; education: string; flow: string
   eduform?: string; label?: string
 }
+export interface Teacher { id: string; name: string }
 export interface Lesson {
   id: string; pair: number; start: string; end: string; subject: string;
   room: string | null; teacher: string | null; teacher_full: string | null;
@@ -10,9 +11,11 @@ export interface Lesson {
   source: Record<string, unknown>
 }
 export interface Day { date: string; lessons: Lesson[] }
-export interface Schedule {
-  group_id: string; period_start: string; period_end: string; days: Day[];
+export interface ScheduleData {
+  period_start: string; period_end: string; days: Day[];
   bells: Record<string, [string, string]>; academic_year: string | null; semester: string | null;
   university_updated_at: string | null; fetched_at: string; stale: boolean; warning: string | null
   offline?: boolean
 }
+export interface Schedule extends ScheduleData { group_id: string }
+export interface TeacherSchedule extends ScheduleData { teacher_id: string; teacher_name: string }

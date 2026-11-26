@@ -1,10 +1,10 @@
 import { OFFLINE_GROUPS_KEY, readSetting } from '@/lib/storage'
-import type { Group, Schedule } from '@/types'
+import type { Group, Schedule, Teacher, TeacherSchedule } from '@/types'
 import { appPath, scheduleFilename, staticDataEnabled } from '@/config/deployment'
 import { ApiError, request } from './http'
-import { isSavedSchedule, readOfflineSchedule, saveOfflineSchedule } from './offline-schedules'
+import { isSavedSchedule, readOfflineSchedule, readOfflineTeacherSchedule, saveOfflineSchedule, saveOfflineTeacherSchedule, teacherSchedulePath } from './offline-schedules'
 export { ApiError, request } from './http'
-export { forgetOfflineSchedule } from './offline-schedules'
+export { forgetOfflineSchedule, forgetOfflineTeacherSchedule } from './offline-schedules'
 
 function canUseOfflineCopy(error: unknown) {
   return error instanceof ApiError && (error.status === 0 || error.status >= 500 || staticDataEnabled && error.status === 404)
@@ -46,5 +46,23 @@ export async function requestSchedule(groupId: string, refresh = false): Promise
     throw error
   }
   await saveOfflineSchedule(groupId, data)
+  return data
+}
+
+export function requestTeachers() {
+  return request<Teacher[]>('/api/teachers')
+}
+
+export async function requestTeacherSchedule(teacherId: string): Promise<TeacherSchedule> {
+  let data: TeacherSchedule
+  try {
+    data = await request<TeacherSchedule>(teacherSchedulePath(teacherId))
+  } catch (error) {
+    if (!canUseOfflineCopy(error)) throw error
+    const saved = await readOfflineTeacherSchedule(teacherId)
+    if (saved) return saved
+    throw error
+  }
+  await saveOfflineTeacherSchedule(teacherId, data)
   return data
 }

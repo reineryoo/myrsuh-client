@@ -189,3 +189,77 @@ async def test_university_client_uses_multipart(monkeypatch, raw):
     assert b'name="flow"\r\n\r\n213_1' in captured[2].content
     assert b'name="course"\r\n\r\n2' in captured[2].content
     assert b'name="eduform"\r\n\r\n3' in captured[2].content
+
+
+@pytest.mark.asyncio
+async def test_teacher_endpoint_only_loads_enabled_teacher_and_keeps_flows(monkeypatch, raw):
+    import app.main as main
+    import app.services.university_client as university
+
+    raw["id"] = "197"
+    raw["item"] = "Тестовый преподаватель"
+    raw["tblData"][0]["pairs"][0]["flows"][0].update(flow="ПИ ИКТЦТ", id_flow="226", course="3")
+    requests = []
+
+    def handle(request):
+        requests.append(request)
+        return httpx.Response(200, json=raw)
+
+    client_class = httpx.AsyncClient
+    monkeypatch.setattr(university.httpx, "AsyncClient", lambda **kwargs: client_class(
+        transport=httpx.MockTransport(handle), **kwargs))
+    clock = [100.0]
+    monkeypatch.setattr(main, "teacher_service", ScheduleService(university.fetch_teacher_schedule, lambda: clock[0]))
+
+    async with client_class(transport=httpx.ASGITransport(app=main.app), base_url="http://test") as client:
+        url = "/api/teachers/197/schedule"
+        assert (await client.get("/api/teachers/198/schedule")).status_code == 404
+        assert not requests
+        response = await client.get(url)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["teacher_id"] == "197"
+        assert data["teacher_name"] == raw["item"]
+        assert "group_id" not in data
+        assert len(data["days"]) == 3
+        lesson = data["days"][0]["lessons"][0]
+        assert (lesson["start"], lesson["end"]) == BELLS[5]
+        assert lesson["teacher_full"] == data["teacher_name"]
+        assert lesson["source"]["flow"] == "ПИ ИКТЦТ"
+        assert lesson["source"]["id_flow"] == "226"
+        assert lesson["source"]["course"] == "3"
+        assert (await client.get(url)).json() == data
+        assert len(requests) == 1
+        assert b'name="menuMode"\r\n\r\nteacher' in requests[0].content
+        assert b'name="intervalMode"\r\n\r\n4' in requests[0].content
+        assert b'name="teacher"\r\n\r\n197' in requests[0].content
+        assert b'name="eduform"' not in requests[0].content
+
+        # Ответ с чужим ID не должен заменить уже сохранённое расписание.
+        clock[0] += max(settings.cache_ttl, settings.refresh_cooldown) + 1
+        raw["id"] = "198"
+        response = await client.get(url)
+        assert response.status_code == 200
+        fallback = response.json()
+        assert fallback["stale"] and fallback["teacher_id"] == "197"
+        assert fallback["days"] == data["days"]
+        assert len(requests) == 2
+
+
+@pytest.mark.asyncio
+async def test_teacher_catalog_excludes_other_people(monkeypatch):
+    import app.main as main
+    import app.services.university_client as university
+
+    allowed = {"197", "8", "497", "328", "860", "571"}
+    post = AsyncMock(return_value=[
+        *({"id": int(teacher_id), "data": f"Преподаватель {teacher_id}"} for teacher_id in allowed),
+        {"id": "198", "data": "Вне списка"},
+    ])
+    monkeypatch.setattr(university, "_post_json", post)
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=main.app), base_url="http://test") as client:
+        response = await client.get("/api/teachers")
+        assert response.status_code == 200
+        assert {item["id"] for item in response.json()} == allowed
+        assert all(item["name"] == f"Преподаватель {item['id']}" for item in response.json())
+        post.assert_awaited_once_with(university.TEACHER_CATALOG_URL)

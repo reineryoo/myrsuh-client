@@ -6,8 +6,8 @@ import { moscowNow } from '@/lib/dates'
 import { orderedDayPairs, timelinePosition } from '@/lib/day-state'
 import type { Lesson } from '@/types'
 
-export function DaySchedule({ day, lessons, now, available, organizePast = true }:
-  { day: string; lessons: Lesson[]; now: ReturnType<typeof moscowNow>; available: boolean; organizePast?: boolean }) {
+export function DaySchedule({ day, lessons, now, available, organizePast = true, onLesson }:
+  { day: string; lessons: Lesson[]; now: ReturnType<typeof moscowNow>; available: boolean; organizePast?: boolean; onLesson?: (lesson: Lesson) => void }) {
   const container = useRef<HTMLDivElement>(null)
   const elements = useRef(new Map<number, HTMLDivElement>())
   const [lineY, setLineY] = useState<number | null>(null)
@@ -45,7 +45,8 @@ export function DaySchedule({ day, lessons, now, available, organizePast = true 
         {gap > 0 && <div className="lesson-break"><span />перерыв {gap} мин<span /></div>}
         <div className="pair-group" ref={element => { if (element) elements.current.set(pair, element); else elements.current.delete(pair) }}>
           {entries.length > 1 && <p className="simultaneous-label">Занятий одновременно: {entries.length}</p>}
-          {entries.map(lesson => <LessonCard key={lesson.id} lesson={lesson} day={day} now={now} nextPair={nextPair} mutePast={organizePast} />)}
+          {entries.map(lesson => <LessonCard key={lesson.id} lesson={lesson} day={day} now={now} nextPair={nextPair}
+            mutePast={organizePast} onOpen={onLesson && (() => onLesson(lesson))} />)}
         </div>
       </Fragment>
     })}

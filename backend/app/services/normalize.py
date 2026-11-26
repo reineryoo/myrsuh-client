@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from app.config.bells import BELLS
-from app.models import Day, Lesson, RawSchedule, Schedule
+from app.models import Day, Lesson, RawSchedule, RawTeacherSchedule, Schedule, TeacherSchedule
 
 MOSCOW = ZoneInfo("Europe/Moscow")
 
@@ -14,6 +14,23 @@ def clean(value: str | None) -> str | None:
 
 
 def normalize(raw: RawSchedule, group_id: str) -> Schedule:
+    return Schedule(group_id=group_id, **_schedule_fields(raw))
+
+
+def normalize_teacher(raw: RawTeacherSchedule, teacher_id: str) -> TeacherSchedule:
+    """Проверяет ID преподавателя и берёт его ФИО из заголовка ответа РГГУ.
+
+    API преподавателя не повторяет ФИО в каждой паре. Сведения о потоках
+    остаются в исходных полях занятия: source.flow, source.id_flow и source.course.
+    """
+    teacher_name = clean(raw.item)
+    if raw.id != teacher_id or not teacher_name:
+        raise ValueError("Unexpected teacher in upstream schedule")
+    return TeacherSchedule(teacher_id=teacher_id, teacher_name=teacher_name,
+                           **_schedule_fields(raw, teacher_name=teacher_name))
+
+
+def _schedule_fields(raw: RawSchedule, *, teacher_name: str | None = None) -> dict:
     """Преобразует ответ РГГУ в единый формат расписания приложения.
 
     Проверяет границы периода, сохраняет все одновременные занятия и добавляет
@@ -39,7 +56,7 @@ def normalize(raw: RawSchedule, group_id: str) -> Schedule:
                     pair=pair.pair, start=BELLS[pair.pair][0], end=BELLS[pair.pair][1],
                     subject=clean(flow.subject) or "Дисциплина не указана",
                     room=clean(flow.room), teacher=clean(flow.teacher),
-                    teacher_full=clean(flow.teacher_fullfio), lesson_type=clean(flow.lessontype),
+                    teacher_full=clean(flow.teacher_fullfio) or teacher_name, lesson_type=clean(flow.lessontype),
                     group=clean(flow.group), subgroup=clean(flow.subgroup), source=flow,
                 ))
     days = [Day(date=start + timedelta(days=i), lessons=sorted(
@@ -51,8 +68,8 @@ def normalize(raw: RawSchedule, group_id: str) -> Schedule:
             updated = datetime.strptime(raw.updatetime, "%d.%m.%Y %H:%M").replace(tzinfo=MOSCOW)
         except ValueError:
             pass
-    return Schedule(
-        group_id=group_id, period_start=start, period_end=end, days=days, bells=BELLS,
+    return dict(
+        period_start=start, period_end=end, days=days, bells=BELLS,
         academic_year=raw.edYear, semester=raw.semester,
         university_updated_at=updated, fetched_at=datetime.now(MOSCOW),
     )

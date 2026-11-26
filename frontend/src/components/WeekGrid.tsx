@@ -25,7 +25,7 @@ export function WeekGrid({ dates, days, schedule, selected, now, onDay, onLesson
         const lessons = days.get(key)?.lessons.filter(lesson => lesson.pair === Number(number)) ?? []
         const unavailable = key < schedule.period_start || key > schedule.period_end
         return <div key={key} className={cn('week-slot', unavailable && 'unavailable')}>
-          {lessons.map((lesson, index) => <button key={lesson.id} onClick={() => onLessons(date, lessons)}
+          {lessons.map((lesson, index) => <button key={lesson.id} onClick={() => onLessons(date, [lesson, ...lessons.filter(item => item !== lesson)])}
             className={cn('week-event', lessonKind(lesson.lesson_type), lessonProgress(lesson, key, now) !== null && 'current-event')}
             aria-label={`${fmt(date, 'd MMMM')}, ${lesson.pair} пара, ${lesson.start}–${lesson.end}, ${lesson.subject}${lessons.length > 1 ? `, запись ${index + 1} из ${lessons.length}` : ''}`}>
             <span className="week-event-type">{lessonBadges(lesson.lesson_type).map(badge => badge.label).join('/') || 'ПАРА'}</span>

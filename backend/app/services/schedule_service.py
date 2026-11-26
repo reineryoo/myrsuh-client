@@ -3,7 +3,7 @@ import logging
 from dataclasses import dataclass
 from time import monotonic
 
-from app.models import Schedule
+from app.models import ScheduleData
 from app.services.university_client import fetch_schedule
 from app.settings import settings
 
@@ -21,7 +21,7 @@ class RateLimited(Exception):
 
 @dataclass
 class Entry:
-    data: Schedule
+    data: ScheduleData
     saved_at: float
 
 
@@ -33,13 +33,13 @@ class ScheduleService:
         self.attempts: dict[str, float] = {}
         self.locks: dict[str, asyncio.Lock] = {}
 
-    def fallback(self, group_id: str) -> Schedule:
+    def fallback(self, schedule_id: str) -> ScheduleData:
         """Возвращает сохранённое расписание при недоступности университета.
 
         Копия помечается как устаревшая, если её возраст ещё допустим.
         При отсутствии подходящей копии сообщает, что данные недоступны.
         """
-        entry = self.cache.get(group_id)
+        entry = self.cache.get(schedule_id)
         if entry and self.clock() - entry.saved_at <= settings.max_stale_seconds:
             return entry.data.model_copy(update={
                 "stale": True,
@@ -47,29 +47,29 @@ class ScheduleService:
             })
         raise Unavailable()
 
-    async def get(self, group_id: str, force: bool = False) -> Schedule:
+    async def get(self, schedule_id: str, force: bool = False) -> ScheduleData:
         """Получает расписание из кеша или обновляет его через API РГГУ.
 
-        Блокировка для каждой группы объединяет одновременные обращения.
+        Блокировка для каждого расписания объединяет одновременные обращения.
         Принудительное обновление обходит срок свежести кеша, но сохраняет
         ограничение частоты запросов, включая повторные попытки после ошибки.
         При сбое используется ранее сохранённая копия через fallback.
         """
-        async with self.locks.setdefault(group_id, asyncio.Lock()):
+        async with self.locks.setdefault(schedule_id, asyncio.Lock()):
             now = self.clock()
-            entry = self.cache.get(group_id)
+            entry = self.cache.get(schedule_id)
             if not force and entry and now - entry.saved_at < settings.cache_ttl:
                 return entry.data
-            previous = self.attempts.get(group_id)
+            previous = self.attempts.get(schedule_id)
             if previous is not None and now - previous < settings.refresh_cooldown:
                 if force:
                     raise RateLimited(max(1, int(settings.refresh_cooldown - (now - previous)) + 1))
-                return self.fallback(group_id)
-            self.attempts[group_id] = now
+                return self.fallback(schedule_id)
+            self.attempts[schedule_id] = now
             try:
-                data = await self.fetcher(group_id)
+                data = await self.fetcher(schedule_id)
             except Exception as exc:
                 logger.warning("University fetch failed (%s)", type(exc).__name__)
-                return self.fallback(group_id)
-            self.cache[group_id] = Entry(data, self.clock())
+                return self.fallback(schedule_id)
+            self.cache[schedule_id] = Entry(data, self.clock())
             return data

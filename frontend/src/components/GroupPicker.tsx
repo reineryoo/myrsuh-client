@@ -1,11 +1,12 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { Check, ChevronDown, ChevronRight, UsersRound } from 'lucide-react'
-import type { Group } from '@/types'
+import { Check, ChevronDown, ChevronRight, UserRound, UsersRound } from 'lucide-react'
+import type { Group, Teacher } from '@/types'
 import { groupShortName } from '@/config/groups'
 
-export function GroupPicker({ group, savedGroups, onSelect, onManage }:
-  { group?: Group; savedGroups: Group[]; onSelect: (id: string) => void; onManage: () => void }) {
+export function GroupPicker({ group, savedGroups, savedTeachers, activeTeacher, onSelect, onTeacherSelect, onManage }:
+  { group?: Group; savedGroups: Group[]; savedTeachers: Teacher[]; activeTeacher?: Teacher; onSelect: (id: string) => void;
+    onTeacherSelect: (id: string) => void; onManage: () => void }) {
   const [open, setOpen] = useState(false)
   const trigger = useRef<HTMLButtonElement>(null)
   const [position, setPosition] = useState<{ top: number; left: number; maxHeight: number } | null>(null)
@@ -24,18 +25,27 @@ export function GroupPicker({ group, savedGroups, onSelect, onManage }:
     return () => { cancelAnimationFrame(frame); window.removeEventListener('resize', measure) }
   }, [open])
   return <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
-    <DialogPrimitive.Trigger asChild><button ref={trigger} className="group-pill" aria-label="Выбрать расписание"><span>{groupShortName(group)}</span><ChevronDown size={16} /></button></DialogPrimitive.Trigger>
+    <DialogPrimitive.Trigger asChild><button ref={trigger} className="group-pill" aria-label="Выбрать расписание"><span>{activeTeacher?.name ?? groupShortName(group)}</span><ChevronDown size={16} /></button></DialogPrimitive.Trigger>
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="group-picker-backdrop" />
       <DialogPrimitive.Content className="group-popover" style={position ?? { visibility: 'hidden' }}>
         <DialogPrimitive.Title className="group-picker-title">Выберите расписание</DialogPrimitive.Title>
-        <DialogPrimitive.Description className="sr-only">Выбери сохранённую группу или открой все расписания.</DialogPrimitive.Description>
+        <DialogPrimitive.Description className="sr-only">Выбери сохранённое расписание или открой весь список.</DialogPrimitive.Description>
         {savedGroups.map(item => {
-          const selected = item.id === group?.id
+          const selected = !activeTeacher && item.id === group?.id
           return <button key={item.id} className="picker-group" aria-current={selected ? 'true' : undefined}
             onClick={() => { onSelect(item.id); setOpen(false) }}>
             <UsersRound size={16} aria-hidden="true" />
             <span><strong>{groupShortName(item)}</strong><small>{item.course} курс</small></span>
+            {selected && <Check size={16} aria-hidden="true" />}
+          </button>
+        })}
+        {savedTeachers.map(teacher => {
+          const selected = teacher.id === activeTeacher?.id
+          return <button key={`teacher:${teacher.id}`} className="picker-group" aria-current={selected ? 'true' : undefined}
+            onClick={() => { onTeacherSelect(teacher.id); setOpen(false) }}>
+            <UserRound size={16} aria-hidden="true" />
+            <span><strong>{teacher.name}</strong><small>Преподаватель</small></span>
             {selected && <Check size={16} aria-hidden="true" />}
           </button>
         })}

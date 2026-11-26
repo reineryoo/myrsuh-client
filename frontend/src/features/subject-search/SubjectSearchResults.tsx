@@ -7,10 +7,11 @@ import { fmt } from '@/lib/dates'
 import type { MoscowClock } from '@/lib/dates'
 import { kindLabels, matchesSearch, pairWord } from '@/lib/lessons'
 import { isPastSubjectPair, remainingSubjectKinds, subjectIndex, subjectProgress } from './subjects'
-import type { Schedule } from '@/types'
+import type { Lesson, ScheduleData } from '@/types'
 
-export function SubjectSearchResults({ data, query, now, onDay, organizePast = true }:
-  { data: Schedule; query: string; now: MoscowClock; onDay: (date: Date) => void; organizePast?: boolean }) {
+export function SubjectSearchResults({ data, query, now, onDay, onLesson, organizePast = true }:
+  { data: ScheduleData; query: string; now: MoscowClock; onDay: (date: Date) => void;
+    onLesson?: (date: Date, lesson: Lesson) => void; organizePast?: boolean }) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [limit, setLimit] = useState(30)
   const subjects = useMemo(() => subjectIndex(data.days), [data.days])
@@ -57,7 +58,8 @@ export function SubjectSearchResults({ data, query, now, onDay, organizePast = t
     {results.slice(0, limit).map(({ date, lesson, past }, index) => <div className="search-result" key={`${date}:${lesson.id}`}>
       {organizePast && past && (index === 0 || !results[index - 1].past) && <p className="past-section-heading">Уже прошли</p>}
       <button className="result-date" onClick={() => onDay(parseISO(date))}>{fmt(parseISO(date), 'd MMMM, EEEE')}<ArrowRight size={14} /></button>
-      <LessonCard lesson={lesson} day={date} now={now} mutePast={organizePast && past} />
+      <LessonCard lesson={lesson} day={date} now={now} mutePast={organizePast && past}
+        onOpen={onLesson && (() => onLesson(parseISO(date), lesson))} />
     </div>)}
     {results.length > limit && <Button variant="outline" className="load-more" onClick={() => setLimit(limit + 30)}>Показать ещё</Button>}
   </section>

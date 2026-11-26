@@ -2,12 +2,12 @@ import { ExternalLink, RefreshCw, RotateCcw, Smartphone, Timer } from 'lucide-re
 import { Button } from '@/components/ui/button'
 import { formatTimestamp } from '@/lib/dates'
 import { cn } from '@/lib/utils'
-import type { Schedule } from '@/types'
+import type { ScheduleData } from '@/types'
 import type { Accent } from '@/config/preferences'
 import { AccentOptions, NicknameField, ThemeOptions } from '@/components/PreferencesFields'
 
 export function SettingsPage({ theme, onTheme, data, onReset, onRefresh, refreshing, cooldown, accent = 'blue', onAccent, organizePast = true, onOrganizePast, nickname = '', onNickname }:
-  { theme: string; onTheme: (theme: string) => void; data?: Schedule; onReset: () => void; onRefresh?: () => void; refreshing: boolean; cooldown: boolean;
+  { theme: string; onTheme: (theme: string) => void; data?: ScheduleData; onReset: () => void; onRefresh?: () => void; refreshing: boolean; cooldown: boolean;
     accent?: Accent; onAccent?: (accent: Accent) => void; organizePast?: boolean; onOrganizePast?: (value: boolean) => void; nickname?: string; onNickname?: (value: string) => void }) {
   return <section className="settings-page"><div className="page-title"><h1>Настройки</h1><p>Чтобы всё было по-твоему.</p></div>
     <section className="surface-panel settings-card nickname-settings"><NicknameField value={nickname} onChange={onNickname} /></section>

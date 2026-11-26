@@ -8,10 +8,10 @@ import { dayState, greeting } from '@/lib/day-state'
 import { displayNickname, nicknameInitial } from '@/lib/nickname'
 import { groupPairs, lessonBadges, lessonKind, pairWord } from '@/lib/lessons'
 import { cn } from '@/lib/utils'
-import type { Day, Lesson, Schedule } from '@/types'
+import type { Day, Lesson, ScheduleData } from '@/types'
 
-export function HomePage({ data, days, date, now, onDate, onCalendar, onDetails, onSettings, onSearch, organizePast = true, nickname = '', offline = false }:
-  { data?: Schedule; days: Map<string, Day>; date: Date; now: MoscowClock; onDate: (date: Date) => void;
+export function HomePage({ data, days, date, now, onDate, onCalendar, onDetails, onSettings, onSearch, scheduleName, organizePast = true, nickname = '', offline = false }:
+  { data?: ScheduleData; scheduleName?: string; days: Map<string, Day>; date: Date; now: MoscowClock; onDate: (date: Date) => void;
     onCalendar: (date: Date) => void; onDetails: (date: Date, lessons: Lesson[]) => void; onSettings: () => void; onSearch: () => void; organizePast?: boolean; nickname?: string; offline?: boolean }) {
   const name = displayNickname(nickname)
   const key = dateKey(date)
@@ -47,6 +47,7 @@ export function HomePage({ data, days, date, now, onDate, onCalendar, onDetails,
   return <section className="home-page">
     <header className="home-topbar"><div className="profile-control"><button className="student-avatar" onClick={onSettings} aria-label="Профиль — настройки" title={name}>{nicknameInitial(nickname)}</button>{offline && <OfflineIndicator />}</div><span className="home-clock"><Clock3 size={12} />{now.time}<span>МСК</span></span><button className="home-search-button" onClick={onSearch} aria-label="Поиск в календаре"><Search size={20} /></button></header>
     <h1 className="greeting">{greeting(now.time)},<span className="greeting-nickname" title={name}>{name}</span></h1>
+    {scheduleName && <p className="home-schedule-name">{scheduleName}</p>}
     <p className="home-subtitle">{label}{data ? available ? ` · ${state.pairs.length} ${pairWord(state.pairs.length)}${lessons.length ? ` · ${state.state === 'finished' ? 'на сегодня всё' : `первая в ${lessons[0].start}`}` : ''}` : ' · нет данных на эту дату' : ' · загружаем расписание'}</p>
     <DayStrip date={date} today={now.date} days={days} onSelect={onDate} />
     <div className="content-transition" key={key}>

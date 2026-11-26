@@ -12,17 +12,20 @@ import type { MoscowClock } from '@/lib/dates'
 import { groupPairs, kindLabels, pairKinds, pairWord } from '@/lib/lessons'
 import type { LessonKind } from '@/lib/lessons'
 import { cn } from '@/lib/utils'
-import type { Day, Group, Lesson, Schedule } from '@/types'
+import type { Day, Group, Lesson, ScheduleData, Teacher } from '@/types'
 
 export type CalendarView = 'day' | 'week' | 'month' | 'semester'
 const views = [{ id: 'day', label: 'День' }, { id: 'week', label: 'Неделя' }, { id: 'month', label: 'Месяц' }] as const
 
-export function CalendarPage({ data, days, date, view, now, group, savedGroups, onDate, onView, onGroupSelect, onManageGroups, onDetails, onRefresh, refreshing, cooldown, organizePast = true }:
-  { data: Schedule; days: Map<string, Day>; date: Date; view: CalendarView; now: MoscowClock; group?: Group; savedGroups: Group[];
+export function CalendarPage({ data, days, date, view, now, group, savedGroups, savedTeachers, activeTeacher,
+  onDate, onView, onGroupSelect, onTeacherSelect, onManageGroups, onDetails, onRefresh, refreshing, cooldown, organizePast = true }:
+  { data: ScheduleData; days: Map<string, Day>; date: Date; view: CalendarView; now: MoscowClock; group?: Group; savedGroups: Group[];
+    savedTeachers: Teacher[]; activeTeacher?: Teacher; onTeacherSelect: (id: string) => void;
     onDate: (date: Date) => void; onView: (view: CalendarView) => void; onGroupSelect: (id: string) => void; onManageGroups: () => void;
     onDetails: (date: Date, lessons: Lesson[]) => void; onRefresh?: () => void; refreshing: boolean; cooldown: boolean; organizePast?: boolean }) {
   const [search, setSearch] = useState('')
   const swipeStart = useRef<number | null>(null)
+  const swiped = useRef(false)
   const key = dateKey(date)
   const week = weekDays(date)
   const lessons = days.get(key)?.lessons ?? []
@@ -40,12 +43,21 @@ export function CalendarPage({ data, days, date, view, now, group, savedGroups, 
   function move(direction: number) {
     if (view !== 'semester') onDate(moveCalendarDate(date, view === 'month' ? 'month' : 'week', direction))
   }
-  function swipe(endX: number) { const value = swipeDate(key, swipeStart.current, endX); swipeStart.current = null; if (value) onDate(value) }
+  function swipe(endX: number) {
+    const value = swipeDate(key, swipeStart.current, endX)
+    swipeStart.current = null
+    swiped.current = value !== null
+    if (value) onDate(value)
+  }
   function today() { onDate(parseISO(now.date)); if (view === 'semester') onView('day'); setSearch('') }
 
   return <section className="calendar-page">
     <header className="app-header"><p className="app-eyebrow">{semester ? `${semester.current}-я неделя из ${semester.total} в семестре` : 'Вне загруженного семестра'}</p>
-      <div className="header-title-row"><h1>Пары</h1><div className="header-actions"><GroupPicker group={group} savedGroups={savedGroups} onSelect={onGroupSelect} onManage={onManageGroups} /><button className="circle-button" aria-label="Обзор семестра" onClick={() => { onView('semester'); setSearch('') }}><CalendarRange size={20} /></button></div></div>
+      <div className="header-title-row"><h1>Пары</h1><div className="header-actions">
+        <GroupPicker group={group} savedGroups={savedGroups} savedTeachers={savedTeachers} activeTeacher={activeTeacher}
+          onSelect={onGroupSelect} onTeacherSelect={onTeacherSelect} onManage={onManageGroups} />
+        <button className="circle-button" aria-label="Обзор семестра" onClick={() => { onView('semester'); setSearch('') }}><CalendarRange size={20} /></button>
+      </div></div>
       <div className="search-row">
         <label className="search-field">
           <Search size={18} />
@@ -64,7 +76,8 @@ export function CalendarPage({ data, days, date, view, now, group, savedGroups, 
     <div className="view-switch" aria-label="Вид расписания">{views.map(mode => <button key={mode.id} aria-pressed={!search.trim() && view === mode.id} className={cn(!search.trim() && view === mode.id && 'selected')} onClick={() => { onView(mode.id); setSearch('') }}>{mode.label}</button>)}</div>
 
     <div className="content-transition" key={search.trim() ? 'search' : `${view}:${key}`}>
-    {search.trim() ? <SubjectSearchResults key={`${data.group_id}:${search}`} data={data} query={search} now={now} onDay={selectDay} organizePast={organizePast} />
+    {search.trim() ? <SubjectSearchResults key={search} data={data} query={search} now={now} onDay={selectDay}
+      onLesson={(lessonDate, lesson) => onDetails(lessonDate, [lesson])} organizePast={organizePast} />
     : view === 'semester' ? <section className="semester-view"><div className="section-heading"><h2>Весь семестр</h2><CalendarRange size={21} /></div><p className="section-caption">{fmt(parseISO(data.period_start), 'd MMM yyyy')} — {fmt(parseISO(data.period_end), 'd MMM yyyy')}</p><div className="semester-grid">{monthsBetween(data.period_start, data.period_end).map(item => <section className="semester-month surface-panel" key={dateKey(item)}><div className="month-heading"><h3>{fmt(item, 'LLLL')}</h3><span>{fmt(item, 'yyyy')}</span></div><MonthGrid compact month={item} today={now.date} days={days} selected={key} onSelect={selectDay} start={data.period_start} end={data.period_end} /></section>)}</div></section> : <>
       <div className="period-navigation">
         <div className="period-arrows">
@@ -73,7 +86,20 @@ export function CalendarPage({ data, days, date, view, now, group, savedGroups, 
           <button aria-label={view === 'month' ? 'Следующий месяц' : 'Следующая неделя'} onClick={() => move(1)}><ChevronRight size={19} /></button>
         </div>
       </div>
-      {view === 'day' && <><DayStrip date={date} today={now.date} days={days} onSelect={onDate} /><div className="section-heading day-title"><h2>{key === now.date ? 'Сегодня' : fmt(date, 'EEEE, d')}</h2><span>{available ? `${pairs.length} ${pairWord(pairs.length)}` : 'Нет данных'}</span></div><p className="section-caption day-caption">{fmt(date, 'd MMMM')}{lessons.length > 0 && ` · ${lessons[0].start}–${lessons.at(-1)!.end}`}<span>МСК</span></p><div className="swipe-surface" onPointerDown={event => { swipeStart.current = event.clientX }} onPointerUp={event => swipe(event.clientX)} onPointerCancel={() => { swipeStart.current = null }}><DaySchedule day={key} lessons={lessons} now={now} available={available} organizePast={organizePast} /></div></>}
+      {view === 'day' && <>
+        <DayStrip date={date} today={now.date} days={days} onSelect={onDate} />
+        <div className="section-heading day-title"><h2>{key === now.date ? 'Сегодня' : fmt(date, 'EEEE, d')}</h2><span>{available ? `${pairs.length} ${pairWord(pairs.length)}` : 'Нет данных'}</span></div>
+        <p className="section-caption day-caption">{fmt(date, 'd MMMM')}{lessons.length > 0 && ` · ${lessons[0].start}–${lessons.at(-1)!.end}`}<span>МСК</span></p>
+        <div className="swipe-surface" onPointerDown={event => { swipeStart.current = event.clientX; swiped.current = false }}
+          onPointerUp={event => swipe(event.clientX)} onPointerCancel={() => { swipeStart.current = null }}
+          onClickCapture={event => {
+            if (swiped.current && event.detail > 0) event.stopPropagation()
+            swiped.current = false
+          }}>
+          <DaySchedule day={key} lessons={lessons} now={now} available={available} organizePast={organizePast}
+            onLesson={lesson => onDetails(date, [lesson])} />
+        </div>
+      </>}
       {view === 'week' && <section className="week-view"><div className="section-heading"><h2>Твоя неделя</h2><span>{weekAvailable ? `${weekCount} ${pairWord(weekCount)}` : 'Нет данных'}</span></div>{!weekAvailable && <div className="period-warning"><CalendarRange size={17} /><p>Этот период недоступен.</p><button onClick={() => onDate(parseISO(data.period_start))}>К расписанию <ArrowRight size={14} /></button></div>}{weekAvailable && weekCount === 0 && <p className="empty-period-note">На этой неделе занятий нет.</p>}<div className="surface-panel week-panel"><WeekGrid dates={week} days={days} schedule={data} selected={key} now={now} onDay={selectDay} onLessons={onDetails} /></div><p className="week-hint">Нажми на пару, чтобы посмотреть подробности</p></section>}
       {view === 'month' && <><section className="surface-panel month-panel"><div className="month-heading"><h2>{fmt(date, 'LLLL')}</h2><span>{fmt(date, 'yyyy')} · {data.semester}</span></div><MonthGrid month={date} today={now.date} days={days} selected={key} onSelect={selectDay} start={data.period_start} end={data.period_end} />{month.length === 0 && <p className="empty-period-note">Данные за этот месяц пока недоступны.</p>}</section>{month.length > 0 && <section className="month-summary surface-panel"><h3>В этом месяце</h3>{monthStats.length ? <><div className="month-distribution">{monthStats.map(item => <i key={item.kind} className={item.kind} style={{ flexGrow: item.count }} />)}</div><div className="month-stat-labels">{monthStats.map(item => <span key={item.kind}><i className={item.kind} />{kindLabels[item.kind]} <strong>{item.count}</strong></span>)}</div></> : <p>В доступной части месяца занятий нет.</p>}</section>}</>}
     </>}

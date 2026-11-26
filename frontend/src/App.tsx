@@ -1,26 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { parseISO } from 'date-fns'
-import { ArrowRight, Check, CircleAlert, RotateCcw, X } from 'lucide-react'
+import { Check, CircleAlert, RotateCcw, X } from 'lucide-react'
 import { BottomNav } from '@/components/BottomNav'
 import type { NavigationTab } from '@/components/BottomNav'
 import { Button } from '@/components/ui/button'
-import { Dialog } from '@/components/ui/dialog'
-import { LessonCard } from '@/components/LessonCard'
+import { LessonDetailsDialog } from '@/components/LessonDetailsDialog'
 import { Onboarding } from '@/features/onboarding/Onboarding'
 import { CalendarPage } from '@/pages/CalendarPage'
 import type { CalendarView } from '@/pages/CalendarPage'
 import { GroupManager } from '@/pages/GroupManager'
 import { HomePage } from '@/pages/HomePage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { ApiError, forgetOfflineSchedule, requestConfig, requestGroups, requestSchedule } from '@/services/api'
-import { dateKey, fmt, moscowNow } from '@/lib/dates'
-import { ACCENT_KEY, GROUP_KEY, NICKNAME_KEY, OFFLINE_GROUPS_KEY, ORGANIZE_PAST_KEY, parseSavedGroups, readSetting, SAVED_GROUPS_KEY, saveSetting, THEME_KEY } from '@/lib/storage'
+import { ApiError, forgetOfflineSchedule, forgetOfflineTeacherSchedule, requestConfig, requestGroups, requestSchedule, requestTeacherSchedule } from '@/services/api'
+import { dateKey, moscowNow } from '@/lib/dates'
+import { ACCENT_KEY, GROUP_KEY, NICKNAME_KEY, OFFLINE_GROUPS_KEY, ORGANIZE_PAST_KEY, parseSavedGroups, readSetting, readTeacherPreferences, SAVED_GROUPS_KEY, saveSetting, TEACHER_SCHEDULE_KEY, THEME_KEY, type TeacherPreferences } from '@/lib/storage'
 import { parseAccent, parseOrganizePast } from '@/config/preferences'
 import { staticDataEnabled } from '@/config/deployment'
+import { teacherSchedulesEnabled } from '@/config/teachers'
 import { sanitizeNickname } from '@/lib/nickname'
 import { cn } from '@/lib/utils'
-import type { Lesson } from '@/types'
+import type { Lesson, ScheduleData, Teacher } from '@/types'
 
 type Tab = NavigationTab
 
@@ -32,6 +32,14 @@ function scheduleQuery(groupId: string) {
   }
 }
 
+function teacherScheduleQuery(teacherId: string) {
+  return {
+    queryKey: ['teacher-schedule', teacherId],
+    staleTime: 15 * 60 * 1000,
+    queryFn: () => requestTeacherSchedule(teacherId),
+  }
+}
+
 export default function App() {
   const client = useQueryClient()
   const [selectedGroup, setSelectedGroup] = useState(() => readSetting(GROUP_KEY))
@@ -39,6 +47,13 @@ export default function App() {
     const selected = readSetting(GROUP_KEY)
     return [...new Set([...parseSavedGroups(readSetting(SAVED_GROUPS_KEY)), ...(selected ? [selected] : [])])]
   })
+  const [teacherPreferences, setTeacherPreferences] = useState<TeacherPreferences>(() =>
+    teacherSchedulesEnabled ? readTeacherPreferences() : { saved: [], selectedId: null })
+  const savedTeachers = teacherPreferences.saved
+  const activeTeacher = savedTeachers.find(teacher => teacher.id === teacherPreferences.selectedId)
+    ?? (selectedGroup ? undefined : savedTeachers[0])
+  const teacherActive = !!activeTeacher
+  const activeTeacherId = activeTeacher?.id
   const [theme, setTheme] = useState(() => readSetting(THEME_KEY) === 'light' ? 'light' : 'dark')
   const [accent, setAccent] = useState(() => parseAccent(readSetting(ACCENT_KEY)))
   const [organizePast, setOrganizePast] = useState(() => parseOrganizePast(readSetting(ORGANIZE_PAST_KEY)))
@@ -73,8 +88,9 @@ export default function App() {
   })
   const manualRefreshEnabled = config.data?.manual_refresh === true
   const group = groups?.find(item => item.id === selectedGroup)
-  const schedule = useQuery({
-    ...scheduleQuery(selectedGroup ?? ''), enabled: !!group,
+  const schedule = useQuery<ScheduleData>({
+    ...(activeTeacher ? teacherScheduleQuery(activeTeacher.id) : scheduleQuery(selectedGroup ?? '')),
+    enabled: teacherActive || !!group,
     refetchOnWindowFocus: staticDataEnabled,
     refetchInterval: query => {
       if (!online) return false
@@ -128,12 +144,24 @@ export default function App() {
     async function saveOtherSchedules() {
       for (const item of savedGroups) {
         if (cancelled) return
-        if (item.id !== selectedGroup) await client.prefetchQuery(scheduleQuery(item.id))
+        if (teacherActive || item.id !== selectedGroup) await client.prefetchQuery(scheduleQuery(item.id))
       }
     }
     void saveOtherSchedules()
     return () => { cancelled = true }
-  }, [client, savedGroups, searchOffline, selectedGroup])
+  }, [client, savedGroups, searchOffline, selectedGroup, teacherActive])
+  useEffect(() => {
+    if (!online) return
+    let cancelled = false
+    async function saveOtherTeacherSchedules() {
+      for (const teacher of savedTeachers) {
+        if (cancelled) return
+        if (teacher.id !== activeTeacherId) await client.prefetchQuery(teacherScheduleQuery(teacher.id))
+      }
+    }
+    void saveOtherTeacherSchedules()
+    return () => { cancelled = true }
+  }, [client, online, savedTeachers, activeTeacherId])
   useEffect(() => {
     if (!selectedGroup || group || !groups?.length || catalog.data?.offline) return
     const fallback = groups.find(item => savedIds.includes(item.id)) ?? groups[0]
@@ -166,18 +194,44 @@ export default function App() {
   const data = schedule.data
   const days = useMemo(() => new Map(data?.days.map(day => [day.date, day]) ?? []), [data])
   const offlineSchedule = !online || data?.offline === true
-  const loading = (catalog.isPending || (schedule.isPending && !!group)) && !catalog.isError
-  const failed = schedule.isError || catalog.isError || (!group && !catalog.isPending)
+  const loading = teacherActive ? schedule.isPending : (catalog.isPending || (schedule.isPending && !!group)) && !catalog.isError
+  const failed = schedule.isError || (!teacherActive && (catalog.isError || (!group && !catalog.isPending)))
   const cooldown = (cooldowns[selectedGroup ?? ''] ?? 0) > Date.now()
   const refreshing = refresh.isPending && refresh.variables === selectedGroup
   function refreshGroup() {
     if (!offlineSchedule && manualRefreshEnabled && selectedGroup && group) refresh.mutate(selectedGroup)
   }
 
-  const onRefresh = manualRefreshEnabled && !offlineSchedule ? refreshGroup : undefined
+  const onRefresh = manualRefreshEnabled && !offlineSchedule && !teacherActive ? refreshGroup : undefined
 
   function saveGroup(id: string) { setSavedIds(ids => [...new Set([...ids, id])]) }
-  function chooseGroup(id: string) { saveSetting(GROUP_KEY, id); setSelectedGroup(id); saveGroup(id) }
+  function saveTeacherPreferences(value: TeacherPreferences) {
+    saveSetting(TEACHER_SCHEDULE_KEY, value.saved.length ? JSON.stringify(value) : null)
+    setTeacherPreferences(value)
+  }
+  function saveTeacher(teacher: Teacher) {
+    if (savedTeachers.some(item => item.id === teacher.id)) return
+    saveTeacherPreferences({ ...teacherPreferences, saved: [...savedTeachers, teacher] })
+  }
+  function chooseGroup(id: string) {
+    saveSetting(GROUP_KEY, id)
+    setSelectedGroup(id)
+    saveGroup(id)
+    if (teacherPreferences.selectedId) saveTeacherPreferences({ ...teacherPreferences, selectedId: null })
+  }
+  function chooseTeacher(teacherId: string) {
+    if (!savedTeachers.some(teacher => teacher.id === teacherId)) return
+    saveTeacherPreferences({ ...teacherPreferences, selectedId: teacherId })
+    setManagerOpen(false)
+  }
+  function removeTeacher(teacherId: string) {
+    const remaining = savedTeachers.filter(teacher => teacher.id !== teacherId)
+    const selectedId = teacherPreferences.selectedId === teacherId ? null : teacherPreferences.selectedId
+    saveTeacherPreferences({ saved: remaining, selectedId })
+    void forgetOfflineTeacherSchedule(teacherId)
+    client.removeQueries({ queryKey: teacherScheduleQuery(teacherId).queryKey, exact: true })
+    if (!selectedGroup && !remaining.length) navigate('home')
+  }
   function removeGroup(id: string) {
     const remaining = savedIds.filter(savedId => savedId !== id)
     saveSetting(SAVED_GROUPS_KEY, JSON.stringify(remaining))
@@ -190,7 +244,7 @@ export default function App() {
     saveSetting(GROUP_KEY, next)
     setSelectedGroup(next)
     setDetail(null)
-    if (!next) {
+    if (!next && !savedTeachers.length) {
       setTab('home')
       setManagerOpen(false)
     }
@@ -203,12 +257,17 @@ export default function App() {
       void forgetOfflineSchedule(id)
       client.removeQueries({ queryKey: scheduleQuery(id).queryKey, exact: true })
     }
+    saveTeacherPreferences({ saved: [], selectedId: null })
+    for (const teacher of savedTeachers) {
+      void forgetOfflineTeacherSchedule(teacher.id)
+      client.removeQueries({ queryKey: teacherScheduleQuery(teacher.id).queryKey, exact: true })
+    }
     setSelectedGroup(null); setSavedIds([]); setTheme('dark'); setTab('home'); setManagerOpen(false)
     setHomeDate(parseISO(now.date)); setCalendarDate(parseISO(now.date)); setView('day')
     setAccent('blue'); setOrganizePast(true); setNickname('')
   }
 
-  if (!selectedGroup) {
+  if (!selectedGroup && !savedTeachers.length) {
     return <Onboarding
       nickname={nickname} onNickname={setNickname}
       theme={theme} onTheme={setTheme}
@@ -236,13 +295,14 @@ export default function App() {
 
     if (tab === 'calendar' && managerOpen) {
       return <GroupManager
-        groups={groups ?? []} savedIds={savedIds} selected={selectedGroup}
-        todayLessons={days.get(now.date)?.lessons} now={now} searchOffline={searchOffline}
+        groups={groups ?? []} savedIds={savedIds} selected={selectedGroup} savedTeachers={savedTeachers} activeTeacher={activeTeacher}
+        todayLessons={days.get(now.date)?.lessons} now={now} searchOffline={searchOffline} teacherSearchOffline={!online}
         onAdd={saveGroup} onRemove={removeGroup}
         onSelect={id => {
           chooseGroup(id)
           setManagerOpen(false)
         }}
+        onTeacherAdd={saveTeacher} onTeacherRemove={removeTeacher} onTeacherSelect={chooseTeacher}
         onBack={() => setManagerOpen(false)}
       />
     }
@@ -262,10 +322,11 @@ export default function App() {
           <div className="state-panel error-state" role="alert">
             <CircleAlert size={34} />
             <h2>Расписание пока недоступно</h2>
-            <p>{searchOffline ? 'Для этой группы нужна сохранённая копия. Подключитесь к интернету и откройте расписание.' : 'Не удалось загрузить расписание. Попробуйте ещё раз'}</p>
-            <Button variant="outline" onClick={() => void (catalog.isError ? catalog.refetch() : schedule.refetch())}>
+            <p>{searchOffline ? 'Для этого расписания нужна сохранённая копия. Подключитесь к интернету и откройте расписание.' : 'Не удалось загрузить расписание. Попробуйте ещё раз'}</p>
+            <Button variant="outline" onClick={() => void (!teacherActive && catalog.isError ? catalog.refetch() : schedule.refetch())}>
               <RotateCcw size={16} />Повторить попытку
             </Button>
+            {teacherActive && <Button variant="outline" onClick={() => { navigate('calendar'); setManagerOpen(true) }}>Все расписания</Button>}
           </div>
         )}
       </>
@@ -276,6 +337,7 @@ export default function App() {
     if (tab === 'home') {
       return <HomePage
         nickname={nickname} data={data} days={days} date={homeDate} now={now} organizePast={organizePast} offline={!online}
+        scheduleName={activeTeacher?.name}
         onDate={setHomeDate} onCalendar={openCalendar} onDetails={showDetails}
         onSettings={() => navigate('settings')} onSearch={() => navigate('calendar')}
       />
@@ -283,9 +345,9 @@ export default function App() {
 
     return <CalendarPage
       data={data} days={days} date={calendarDate} view={view} now={now}
-      organizePast={organizePast} group={group} savedGroups={savedGroups}
+      organizePast={organizePast} group={group} savedGroups={savedGroups} savedTeachers={savedTeachers} activeTeacher={activeTeacher}
       onDate={setCalendarDate} onView={setView} onGroupSelect={chooseGroup}
-      onManageGroups={() => setManagerOpen(true)} onDetails={showDetails}
+      onManageGroups={() => setManagerOpen(true)} onTeacherSelect={chooseTeacher} onDetails={showDetails}
       onRefresh={onRefresh} refreshing={refreshing} cooldown={cooldown}
     />
   }
@@ -295,7 +357,7 @@ export default function App() {
       {data && online && data.stale && <div className="warning-banner" role="status">
         Офлайн · показаны сохранённые данные
       </div>}
-      <div className="page-transition" key={`${tab}:${managerOpen ? 'groups' : data ? 'ready' : 'status'}:${selectedGroup}`}>
+      <div className="page-transition" key={`${tab}:${managerOpen ? 'groups' : data ? 'ready' : 'status'}:${activeTeacherId ? `teacher:${activeTeacherId}` : selectedGroup}`}>
         {renderPage()}
       </div>
       <footer className="workspace-footer">Разработчики не несут ответственности за возможные неточности в данных, так как информация загружается автоматически с открытых ресурсов РГГУ. Всегда сверяйте критически важную информацию с официальным сайтом.</footer>
@@ -310,21 +372,7 @@ export default function App() {
       <span>{notice}</span>
       <button aria-label="Скрыть уведомление" onClick={() => setNotice('')}><X size={16} /></button>
     </div>}
-    <Dialog
-      open={!!detail}
-      onOpenChange={open => { if (!open) setDetail(null) }}
-      title={detail ? fmt(detail.date, 'd MMMM, EEEE') : 'Занятие'}
-      description="Все занятия выбранной пары · время московское"
-    >
-      <div className="lesson-dialog">
-        {detail?.lessons.map(lesson => <LessonCard key={lesson.id} lesson={lesson} day={dateKey(detail.date)} now={now} />)}
-        <Button variant="outline" onClick={() => {
-          if (detail) openCalendar(detail.date)
-          setDetail(null)
-        }}>
-          Открыть весь день <ArrowRight size={15} />
-        </Button>
-      </div>
-    </Dialog>
+    <LessonDetailsDialog detail={detail} group={teacherActive ? undefined : group}
+      onClose={() => setDetail(null)} />
   </div>
 }
