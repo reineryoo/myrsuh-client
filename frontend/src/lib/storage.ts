@@ -9,6 +9,7 @@ export const ORGANIZE_PAST_KEY = 'rggu-schedule:organize-past'
 export const NICKNAME_KEY = 'rggu-schedule:nickname'
 export const OFFLINE_GROUPS_KEY = 'rggu-schedule:offline-groups'
 export const TEACHER_SCHEDULE_KEY = 'rggu-schedule:teacher-schedule'
+export const READ_UPDATES_KEY = 'rggu-schedule:read-updates'
 
 export interface TeacherPreferences { saved: Teacher[]; selectedId: string | null }
 

@@ -14,7 +14,7 @@ import { HomePage } from '@/pages/HomePage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { ApiError, forgetOfflineSchedule, forgetOfflineTeacherSchedule, requestConfig, requestGroups, requestSchedule, requestTeacherSchedule } from '@/services/api'
 import { dateKey, moscowNow } from '@/lib/dates'
-import { ACCENT_KEY, GROUP_KEY, NICKNAME_KEY, OFFLINE_GROUPS_KEY, ORGANIZE_PAST_KEY, parseSavedGroups, readSetting, readTeacherPreferences, SAVED_GROUPS_KEY, saveSetting, TEACHER_SCHEDULE_KEY, THEME_KEY, type TeacherPreferences } from '@/lib/storage'
+import { ACCENT_KEY, GROUP_KEY, NICKNAME_KEY, OFFLINE_GROUPS_KEY, ORGANIZE_PAST_KEY, parseSavedGroups, READ_UPDATES_KEY, readSetting, readTeacherPreferences, SAVED_GROUPS_KEY, saveSetting, TEACHER_SCHEDULE_KEY, THEME_KEY, type TeacherPreferences } from '@/lib/storage'
 import { parseAccent, parseOrganizePast } from '@/config/preferences'
 import { staticDataEnabled } from '@/config/deployment'
 import { teacherSchedulesEnabled } from '@/config/teachers'
@@ -252,7 +252,7 @@ export default function App() {
   function navigate(target: Tab) { setTab(target); setManagerOpen(false); window.scrollTo({ top: 0, behavior: 'auto' }) }
   function openCalendar(date: Date) { setCalendarDate(date); setView('day'); navigate('calendar') }
   function reset() {
-    for (const key of [GROUP_KEY, THEME_KEY, SAVED_GROUPS_KEY, ACCENT_KEY, ORGANIZE_PAST_KEY, NICKNAME_KEY, OFFLINE_GROUPS_KEY]) saveSetting(key, null)
+    for (const key of [GROUP_KEY, THEME_KEY, SAVED_GROUPS_KEY, ACCENT_KEY, ORGANIZE_PAST_KEY, NICKNAME_KEY, OFFLINE_GROUPS_KEY, READ_UPDATES_KEY]) saveSetting(key, null)
     for (const id of savedIds) {
       void forgetOfflineSchedule(id)
       client.removeQueries({ queryKey: scheduleQuery(id).queryKey, exact: true })

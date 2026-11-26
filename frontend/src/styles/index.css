@@ -110,12 +110,25 @@ i { font-style: normal; }
 .day-strip .is-today:not(.is-selected) { box-shadow: inset 0 0 0 1px #a7c4ff55; }
 .day-strip button:hover:not(.is-selected) { background: var(--surface-hover); }
 .lesson-dots { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; justify-content: center; min-height: 4px; max-width: 43px; }
-.lesson-dots i { background: var(--neutral); width: 4px; height: 4px; border-radius: 50%; flex-shrink: 0; }
-.lesson-dots .lecture, .calendar-legend .lecture { background: var(--lecture); }
-.lesson-dots .practice, .calendar-legend .practice { background: var(--practice); }
-.lesson-dots .exam, .calendar-legend .exam { background: var(--exam); }
-.is-selected .lesson-dots i { box-shadow: 0 0 0 .6px #182338; }
-.is-selected .lesson-dots .practice { background: #f1f5ff; }
+.lesson-dots i {
+  --dot-size: 4px;
+  --dot-color: var(--neutral);
+  position: relative;
+  width: var(--dot-size);
+  height: var(--dot-size);
+  flex-shrink: 0;
+}
+/* Paint circles with an explicit radius so fractional pixel rounding cannot stretch them. */
+.lesson-dots i::after, .is-selected .lesson-dots i::before { content: ''; position: absolute; inset: -1px; }
+.lesson-dots i::after { background: var(--dot-color); clip-path: circle(calc(var(--dot-size) / 2)); }
+.is-selected .lesson-dots i::before { background: #182338; clip-path: circle(calc(var(--dot-size) / 2 + .6px)); }
+.lesson-dots .lecture { --dot-color: var(--lecture); }
+.lesson-dots .practice { --dot-color: var(--practice); }
+.lesson-dots .exam { --dot-color: var(--exam); }
+.calendar-legend .lecture { background: var(--lecture); }
+.calendar-legend .practice { background: var(--practice); }
+.calendar-legend .exam { background: var(--exam); }
+.is-selected .lesson-dots .practice { --dot-color: #f1f5ff; }
 .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 24px 0 7px; }
 .section-heading h2 { font-size: 25px; font-weight: 650; letter-spacing: -.8px; line-height: 1.2; }
 .section-heading > span { font-size: 12px; color: var(--soft); white-space: nowrap; }
@@ -172,7 +185,7 @@ i { font-style: normal; }
 .month-cell { position: relative; display: flex; flex-direction: column; gap: 8px; justify-content: center; align-items: center; background: var(--inset); min-height: 57px; min-width: 0; padding: 9px 1px; border-radius: 16px; }
 .date-number { font-size: 16px; font-weight: 650; }
 .month-cell .lesson-dots { gap: 2.5px; max-width: 35px; min-height: 5px; }
-.month-cell .lesson-dots i { width: 3px; height: 3px; }
+.month-cell .lesson-dots i { --dot-size: 3px; }
 .month-cell:hover:not(.is-selected) { background: var(--surface-hover); }
 .month-cell.is-selected { background: var(--accent); color: var(--accent-ink); }
 .today-marker { position: absolute; top: 5px; right: 6px; width: 3px; height: 3px; border-radius: 50%; background: var(--practice); }
@@ -190,7 +203,7 @@ i { font-style: normal; }
 .compact .month-cell.is-selected { background: var(--accent); }
 .compact .date-number { font-size: 9px; font-weight: 500; }
 .compact .lesson-dots { gap: 1px; max-width: 13px; min-height: 2px; }
-.compact .lesson-dots i { width: 2px; height: 2px; }
+.compact .lesson-dots i { --dot-size: 2px; }
 .compact .today-marker { top: 3px; right: 2px; width: 2px; height: 2px; }
 .week-view .section-heading { margin: 23px 1px 18px; }
 .week-panel { padding: 13px 8px 15px; border-radius: 24px; }
@@ -201,7 +214,7 @@ i { font-style: normal; }
 .week-date > span:first-child { font-size: 8px; color: var(--soft); text-transform: uppercase; }
 .week-date strong { font-size: 16px; font-weight: 600; }
 .week-date .lesson-dots { gap: 2px; max-width: 28px; }
-.week-date .lesson-dots i { width: 3px; height: 3px; }
+.week-date .lesson-dots i { --dot-size: 3px; }
 .week-date.is-selected { background: var(--accent); color: var(--accent-ink); }
 .week-date.is-selected > span:first-child { color: var(--accent-ink); }
 .week-time { display: flex; flex-direction: column; gap: 5px; padding-top: 10px; font-variant-numeric: tabular-nums; }
@@ -223,10 +236,11 @@ i { font-style: normal; }
 .bottom-nav {
   position: fixed;
   z-index: 20;
-  left: 50%;
+  /* Dialog scroll locking removes the scrollbar from the viewport. */
+  left: calc(50% - var(--removed-body-scroll-bar-size, 0px) / 2);
   transform: translateX(-50%);
   bottom: max(13px, env(safe-area-inset-bottom));
-  width: calc(100% - 26px);
+  width: calc(100% - 26px - var(--removed-body-scroll-bar-size, 0px));
   max-width: 570px;
   display: flex;
   justify-content: space-around;
@@ -400,7 +414,7 @@ select { width: 100%; min-width: 0; color: var(--text); background: var(--input)
   .day-strip > button > span:first-child { font-size: 11px; }
   .day-strip strong { font-size: 24px; }
   .lesson-dots { gap: 4px; }
-  .lesson-dots i { width: 5px; height: 5px; }
+  .lesson-dots i { --dot-size: 5px; }
   .section-heading h2 { font-size: 30px; }
   .section-heading > span { font-size: 14px; }
   .section-caption, .today-status { font-size: 13px; }
@@ -427,7 +441,7 @@ select { width: 100%; min-width: 0; color: var(--text); background: var(--input)
   .month-cell { min-height: 75px; border-radius: 21px; gap: 11px; }
   .date-number { font-size: 21px; }
   .month-cell .lesson-dots { max-width: 45px; gap: 3px; }
-  .month-cell .lesson-dots i { width: 4px; height: 4px; }
+  .month-cell .lesson-dots i { --dot-size: 4px; }
   .semester-grid { gap: 17px; }
   .semester-month { padding: 19px 14px 16px; }
   .semester-month h3 { font-size: 17px; }
@@ -437,14 +451,14 @@ select { width: 100%; min-width: 0; color: var(--text); background: var(--input)
   .compact .month-cell { min-height: 33px; gap: 4px; border-radius: 10px; }
   .compact .date-number { font-size: 12px; }
   .compact .lesson-dots { max-width: 25px; gap: 1px; }
-  .compact .lesson-dots i { width: 2px; height: 2px; }
+  .compact .lesson-dots i { --dot-size: 2px; }
   .week-panel { padding: 19px 13px 20px; }
   .week-grid { grid-template-columns: 40px repeat(7, minmax(0, 1fr)); gap: 7px 5px; }
   .week-date { min-height: 80px; border-radius: 23px; }
   .week-date > span:first-child { font-size: 10px; }
   .week-date strong { font-size: 21px; }
   .week-date .lesson-dots { gap: 2px; max-width: 34px; }
-  .week-date .lesson-dots i { width: 4px; height: 4px; }
+  .week-date .lesson-dots i { --dot-size: 4px; }
   .week-corner { font-size: 9px; }
   .week-time strong { font-size: 11px; }
   .week-time span { font-size: 9px; }
@@ -486,7 +500,7 @@ select { width: 100%; min-width: 0; color: var(--text); background: var(--input)
   .day-strip { gap: 4px; }
   .day-strip > button { min-height: 68px; }
   .day-strip .lesson-dots { gap: 2px; max-width: 29px; }
-  .day-strip .lesson-dots i { width: 3px; height: 3px; }
+  .day-strip .lesson-dots i { --dot-size: 3px; }
   .lesson-card { grid-template-columns: 48px minmax(0, 1fr); gap: 10px; padding-left: 13px; padding-right: 13px; }
   .lesson-content h3 { font-size: 15px; }
   .lesson-time strong { font-size: 16px; }
@@ -519,7 +533,8 @@ select { width: 100%; min-width: 0; color: var(--text); background: var(--input)
 :root { --combined: #9d6c2e; --combined-surface: #f6ebda; }
 .dark { --combined: #e3bd88; --combined-surface: #3a2f22; }
 .combined { --lesson-color: var(--combined); --lesson-surface: var(--combined-surface); }
-.lesson-dots .combined, .calendar-legend .combined { background: var(--combined); }
+.lesson-dots .combined { --dot-color: var(--combined); }
+.calendar-legend .combined { background: var(--combined); }
 .app-shell { max-width: 720px; padding-top: calc(28px + env(safe-area-inset-top, 0px)); padding-bottom: calc(130px + env(safe-area-inset-bottom, 0px)); }
 .bottom-nav { max-width: 630px; }
 .bottom-nav button { width: 83px; }
@@ -666,6 +681,7 @@ select { width: 100%; min-width: 0; color: var(--text); background: var(--input)
 .home-state-actions button, .home-state-panel > button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 10px; padding: 10px 12px; border-radius: 20px; }
 .home-state-panel > button { color: var(--practice); padding-left: 0; margin-top: 10px; }
 .subtle-action { color: var(--practice); }
+:root[data-accent]:not([data-accent='blue']) .home-state-actions .subtle-action { color: var(--soft); }
 .tomorrow-button { background: var(--bg); color: var(--text); }
 
 @media (min-width: 600px) {
