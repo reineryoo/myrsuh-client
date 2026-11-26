@@ -68,7 +68,16 @@ i { font-style: normal; }
 ::selection { background: #a7c4ff50; }
 
 /* One mobile layout, gently widened on a desktop. */
-.app-shell { width: 100%; max-width: 620px; margin: 0 auto; padding: 28px 20px 125px; }
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 28px 20px 125px;
+}
 .app-header { margin-bottom: 22px; }
 .app-eyebrow { color: var(--accent); font-size: 12px; font-weight: 550; letter-spacing: .1px; margin-bottom: 8px; }
 :root:not(.dark) .app-eyebrow { color: var(--practice); }
@@ -232,7 +241,7 @@ i { font-style: normal; }
 .calendar-legend { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 13px; margin: 21px 0 0; color: var(--muted); font-size: 8px; }
 .calendar-legend > span { display: flex; align-items: center; gap: 5px; }
 .calendar-legend i { width: 5px; height: 5px; border-radius: 50%; }
-.workspace-footer { margin-top: 33px; color: var(--muted); text-align: center; font-size: 9px; line-height: 1.9; padding: 0 8px; }
+.workspace-footer { margin-top: auto; color: var(--muted); text-align: center; font-size: 9px; line-height: 1.9; padding: 33px 8px 0; }
 .bottom-nav {
   position: fixed;
   z-index: 20;
@@ -247,7 +256,7 @@ i { font-style: normal; }
   align-items: center;
   gap: 8px;
   background: var(--nav);
-  background: color-mix(in srgb, var(--nav) 85%, transparent);
+  background: color-mix(in srgb, var(--nav) 65%, transparent);
   -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
   border: 1px solid var(--border);
@@ -536,6 +545,7 @@ select { width: 100%; min-width: 0; color: var(--text); background: var(--input)
 .lesson-dots .combined { --dot-color: var(--combined); }
 .calendar-legend .combined { background: var(--combined); }
 .app-shell { max-width: 720px; padding-top: calc(28px + env(safe-area-inset-top, 0px)); padding-bottom: calc(130px + env(safe-area-inset-bottom, 0px)); }
+.app-shell:has(.calendar-today-fab, .schedule-add-fab) { padding-bottom: calc(168px + env(safe-area-inset-bottom, 0px)); }
 .bottom-nav { max-width: 630px; }
 .bottom-nav button { width: 83px; }
 .page-title { margin-bottom: 27px; }
@@ -573,7 +583,7 @@ select { width: 100%; min-width: 0; color: var(--text); background: var(--input)
   border: 1px solid var(--border);
   border-radius: 22px;
   background: var(--active-surface);
-  background: color-mix(in srgb, var(--active-surface) 80%, transparent);
+  background: color-mix(in srgb, var(--active-surface) 65%, transparent);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   color: var(--accent-text);

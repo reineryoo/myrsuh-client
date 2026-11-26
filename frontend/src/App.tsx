@@ -358,8 +358,8 @@ export default function App() {
       <div className="page-transition" key={`${tab}:${managerOpen ? 'groups' : data ? 'ready' : 'status'}:${activeTeacherId ? `teacher:${activeTeacherId}` : selectedGroup}`}>
         {renderPage()}
       </div>
-      <footer className="workspace-footer">Разработчики не несут ответственности за возможные неточности в данных, так как информация загружается автоматически с открытых ресурсов РГГУ. Всегда сверяйте критически важную информацию с официальным сайтом.</footer>
     </main>
+    <footer className="workspace-footer">Разработчики не несут ответственности за возможные неточности в данных, так как информация загружается автоматически с открытых ресурсов РГГУ. Всегда сверяйте критически важную информацию с официальным сайтом.</footer>
 
     <BottomNav active={tab} onSelect={target => {
       if (target === 'home') setHomeDate(parseISO(now.date))
